@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Daily Rhythm — EMA</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#2F6F6D" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<style>
+  @font-face { font-family: 'system-serif'; src: local('Georgia'); }
+  :root{
+    --paper:#FBF9F4;
+    --paper-2:#F3EEE3;
+    --ink:#22262B;
+    --ink-soft:#5B5F63;
+    --line: rgba(34,38,43,0.12);
+    --teal:#2F6F6D;
+    --teal-deep:#1F4B49;
+    --dawn:#E8B98A;
+    --dusk:#5C4A78;
+    --amber:#D9863B;
+    --good: #3F7D5C;
+    --radius: 18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+  body{
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom: 48px;
+  }
+  h1,h2,h3{ font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; font-weight:600; margin:0; letter-spacing:-0.01em;}
+  .mono{ font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  #app{ max-width: 480px; margin:0 auto; padding: 20px 18px 8px; }
+
+  .topbar{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
+  .topbar .clock{ font-size:13px; color:var(--ink-soft); }
+  .brand{ font-size:20px; }
+
+  /* --- Day arc signature --- */
+  .arc-card{
+    background: linear-gradient(180deg, var(--paper-2), var(--paper));
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 16px 10px;
+    margin-bottom:16px;
+  }
+  .arc-wrap{ position:relative; width:100%; }
+  .arc-label{ display:flex; justify-content:space-between; font-size:11px; color:var(--ink-soft); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em;}
+  .arc-caption{ text-align:center; font-size:13px; color:var(--ink-soft); margin-top:6px;}
+
+  .cards{ display:flex; flex-direction:column; gap:12px; }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius: var(--radius);
+    padding:16px; display:flex; align-items:center; gap:12px;
+  }
+  .card.due{ border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
+  .card .dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+  .dot.morning{ background:var(--dawn); }
+  .dot.beep{ background:var(--teal); }
+  .dot.evening{ background:var(--dusk); }
+  .card .meta{ flex:1; min-width:0; }
+  .card .meta .t{ font-size:15px; font-weight:600; }
+  .card .meta .s{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .btn{
+    appearance:none; border:none; background:var(--teal); color:#fff; font-weight:600;
+    font-size:14px; padding:10px 14px; border-radius:12px; cursor:pointer;
+    transition: transform .08s ease, background .15s ease;
+  }
+  .btn:active{ transform: scale(0.97); }
+  .btn.ghost{ background:transparent; color:var(--teal-deep); border:1px solid var(--line); }
+  .btn.small{ padding:7px 10px; font-size:12.5px; }
+  .btn:disabled{ opacity:.45; cursor:default; }
+  .btn.done{ background: var(--good); }
+
+  .section-title{ font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft); margin: 22px 0 8px 4px; }
+
+  .footer-actions{ display:flex; gap:10px; margin-top:20px; }
+
+  /* --- Survey overlay --- */
+  #surveyLayer{ position:fixed; inset:0; background:var(--paper); z-index:50; display:none; flex-direction:column; }
+  #surveyLayer.open{ display:flex; }
+  .survey-head{ padding:16px 18px 10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); }
+  .survey-head .x{ font-size:20px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:4px 8px;}
+  .survey-progress{ height:3px; background:var(--paper-2); border-radius:2px; overflow:hidden; flex:1;}
+  .survey-progress > div{ height:100%; background:var(--teal); transition: width .25s ease; }
+  .survey-body{ flex:1; overflow-y:auto; padding: 22px 20px 100px; max-width:480px; margin:0 auto; width:100%; }
+  .q-eyebrow{ font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;}
+  .q-text{ font-size:19px; line-height:1.35; font-family:Georgia,serif; margin-bottom:22px; }
+  .survey-foot{ position:fixed; bottom:0; left:0; right:0; padding:14px 20px 22px; background:linear-gradient(180deg, transparent, var(--paper) 30%); display:flex; justify-content:space-between; gap:10px;}
+  .survey-foot .btn{ flex:1; padding:13px; font-size:15px; }
+
+  /* slider */
+  .slider-row{ display:flex; align-items:center; gap:12px; font-size:22px; margin-top:10px;}
+  input[type=range]{ flex:1; accent-color: var(--teal); height:6px; }
+  .slider-ends{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-top:6px; }
+
+  /* choice list */
+  .choice{ display:flex; align-items:center; gap:10px; padding:13px 14px; border:1px solid var(--line); border-radius:12px; margin-bottom:8px; cursor:pointer; background:#fff; font-size:15px;}
+  .choice.selected{ border-color:var(--teal); background: rgba(47,111,109,0.07); font-weight:600;}
+  .choice input{ display:none; }
+  .other-input{ width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; font-size:14px; margin-top:2px; font-family:inherit; }
+
+  input[type=text], input[type=time]{ width:100%; padding:12px 13px; border:1px solid var(--line); border-radius:10px; font-size:15px; font-family:inherit; }
+
+  .cat-group{ margin-bottom:14px; }
+  .cat-header{ font-weight:700; font-size:14px; margin-bottom:6px; color:var(--teal-deep); }
+
+  .empty{ text-align:center; padding: 30px 10px; color:var(--ink-soft); }
+  .empty h3{ margin-bottom:6px; color:var(--ink); }
+
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:20px; font-size:13.5px; z-index:100; opacity:0; transition:opacity .25s ease; pointer-events:none;}
+  .toast.show{ opacity:1; }
+
+  .settings-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--line); font-size:14.5px; gap:10px;}
+  .settings-row:last-child{ border-bottom:none; }
+  .settings-row input[type=time]{ width:auto; }
+  select{ padding:9px 10px; border-radius:10px; border:1px solid var(--line); font-family:inherit; font-size:14px; background:#fff;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">Daily Rhythm</div>
+    <div class="clock mono" id="clockNow">--:--</div>
+  </div>
+
+  <div class="arc-card">
+    <div class="arc-wrap" id="arcWrap"></div>
+    <div class="arc-caption" id="arcCaption">Loading today…</div>
+  </div>
+
+  <div class="section-title">Today</div>
+  <div class="cards" id="todayCards"></div>
+
+  <div class="footer-actions">
+    <button class="btn ghost" id="btnHistory" style="flex:1">History</button>
+    <button class="btn ghost" id="btnExport" style="flex:1">Export CSV</button>
+    <button class="btn ghost" id="btnSettings" style="flex:1">Settings</button>
+  </div>
+</div>
+
+<div id="surveyLayer">
+  <div class="survey-head">
+    <button class="x" id="surveyClose">✕</button>
+    <div class="survey-progress"><div id="surveyProgressBar" style="width:0%"></div></div>
+  </div>
+  <div class="survey-body" id="surveyBody"></div>
+  <div class="survey-foot">
+    <button class="btn ghost" id="surveyBack">Back</button>
+    <button class="btn" id="surveyNext">Next</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------------------------------------------------------
+   Daily Rhythm — EMA app
+   All data stays on this device (localStorage) and is exportable
+   as CSV. No server, no account.
+----------------------------------------------------------------*/
+
+const STORE_KEY = 'ema_state_v1';
+const WAKE_START_DEFAULT = '08:00';
+const WAKE_END_DEFAULT = '22:00';
+const BEEPS_PER_DAY = 6;
+const MIN_GAP_MIN = 75; // minimum minutes between beeps
+
+function todayStr(d = new Date()){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function timeStr(d){ return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function loadState(){
+  let raw = localStorage.getItem(STORE_KEY);
+  let state = raw ? JSON.parse(raw) : null;
+  if(!state){
+    state = {
+      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false },
+      schedule: { date: null, times: [] },
+      entries: [],
+      day: { date: null, morningDone:false, eveningDone:false, beepsDone: [] }
+    };
+  }
+  return state;
+}
+let STATE = loadState();
+function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
+
+function ensureToday(){
+  const t = todayStr();
+  if(STATE.day.date !== t){
+    STATE.day = { date: t, morningDone:false, eveningDone:false, beepsDone: [] };
+  }
+  if(STATE.schedule.date !== t){
+    STATE.schedule = { date: t, times: generateBeepTimes() };
+  }
+  saveState();
+}
+
+function generateBeepTimes(){
+  const [sh, sm] = STATE.settings.wakeStart.split(':').map(Number);
+  const [eh, em] = STATE.settings.wakeEnd.split(':').map(Number);
+  const startMin = sh*60+sm, endMin = eh*60+em;
+  const span = endMin - startMin;
+  const slot = span / BEEPS_PER_DAY;
+  const times = [];
+  for(let i=0;i<BEEPS_PER_DAY;i++){
+    const slotStart = startMin + i*slot;
+    const slotEnd = slotStart + slot;
+    const usableStart = slotStart + Math.min(15, slot*0.15);
+    const usableEnd = slotEnd - Math.min(15, slot*0.15);
+    const t = Math.round(usableStart + Math.random()*(usableEnd-usableStart));
+    times.push(t);
+  }
+  times.sort((a,b)=>a-b);
+  // enforce min gap best-effort
+  for(let i=1;i<times.length;i++){
+    if(times[i]-times[i-1] < MIN_GAP_MIN) times[i] = times[i-1] + MIN_GAP_MIN;
+  }
+  return times.map(m => pad(Math.floor(m/60)) + ':' + pad(m%60));
+}
+
+/* ---------------- Notifications ---------------- */
+let swReg = null;
+async function initSW(){
+  if('serviceWorker' in navigator){
+    try{
+      swReg = await navigator.serviceWorker.register('sw.js');
+      navigator.serviceWorker.addEventListener('message', (e)=>{
+        if(e.data?.type === 'CHECK_DUE') checkDueBeeps();
+        if(e.data?.type === 'OPEN_SURVEY') openSurveyByTag(e.data.tag);
+      });
+      if('periodicSync' in swReg){
+        try{ await swReg.periodicSync.register('ema-check', { minInterval: 15*60*1000 }); }catch(e){}
+      }
+    }catch(e){ console.warn('SW registration failed', e); }
+  }
+}
+async function requestNotifPermission(){
+  if(!('Notification' in window)) return false;
+  const p = await Notification.requestPermission();
+  STATE.settings.notifOn = (p === 'granted');
+  saveState();
+  return STATE.settings.notifOn;
+}
+function fireNotification(title, body, tag){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  if(swReg){
+    navigator.serviceWorker.controller?.postMessage({ type:'SHOW_NOTIFICATION', title, body, tag });
+  } else {
+    new Notification(title, { body, icon:'icon-192.png' });
+  }
+}
+function openSurveyByTag(tag){
+  if(tag === 'morning') startSurvey('morning');
+  else if(tag === 'evening') startSurvey('evening');
+  else if(tag && tag.startsWith('beep-')) startSurvey('beep', tag);
+}
+
+let notifiedTags = new Set(JSON.parse(sessionStorage.getItem('notifiedTags')||'[]'));
+function markNotified(tag){ notifiedTags.add(tag); sessionStorage.setItem('notifiedTags', JSON.stringify([...notifiedTags])); }
+
+function checkDueBeeps(){
+  ensureToday();
+  const now = new Date();
+  const nowMin = now.getHours()*60+now.getMinutes();
+  // morning: encourage after wake start if not done
+  const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
+  if(!STATE.day.morningDone && nowMin >= sh*60+sm && !notifiedTags.has('morning-'+STATE.day.date)){
+    fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
+    markNotified('morning-'+STATE.day.date);
+  }
+  STATE.schedule.times.forEach((t, idx)=>{
+    const [th,tm] = t.split(':').map(Number);
+    const tag = 'beep-'+idx+'-'+STATE.day.date;
+    if(nowMin >= th*60+tm && !STATE.day.beepsDone.includes(idx) && !notifiedTags.has(tag)){
+      fireNotification('Quick check-in', 'A couple of questions about right now.', 'beep-'+idx);
+      markNotified(tag);
+    }
+  });
+  const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
+  if(!STATE.day.eveningDone && nowMin >= eh*60+em - 30 && !notifiedTags.has('evening-'+STATE.day.date)){
+    fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
+    markNotified('evening-'+STATE.day.date);
+  }
+  renderHome();
+}
+
+/* ---------------- Day arc (signature visual) ---------------- */
+function renderArc(){
+  ensureToday();
+  const wrap = document.getElementById('arcWrap');
+  const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
+  const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
+  const startMin = sh*60+sm, endMin = eh*60+em;
+  const now = new Date();
+  const nowMin = Math.min(Math.max(now.getHours()*60+now.getMinutes(), startMin), endMin);
+  const frac = (nowMin-startMin)/(endMin-startMin);
+
+  const W = 420, H = 150, cx=W/2, cy=140, r=118;
+  function pt(f){
+    const ang = Math.PI + f*Math.PI; // left to right, top arc
+    return [cx + r*Math.cos(ang), cy + r*Math.sin(ang)];
+  }
+  const [sx,sy] = pt(0), [ex,ey] = pt(1), [nx,ny] = pt(frac);
+
+  let markers = '';
+  const stops = [{f:0, done: STATE.day.morningDone, kind:'morning'}]
+    .concat(STATE.schedule.times.map((t,idx)=>{
+      const [th,tm] = t.split(':').map(Number);
+      const f = ((th*60+tm)-startMin)/(endMin-startMin);
+      return { f, done: STATE.day.beepsDone.includes(idx), kind:'beep' };
+    }))
+    .concat([{f:1, done: STATE.day.eveningDone, kind:'evening'}]);
+
+  stops.forEach(s=>{
+    const [x,y] = pt(Math.min(Math.max(s.f,0),1));
+    const color = s.kind==='morning' ? 'var(--dawn)' : s.kind==='evening' ? 'var(--dusk)' : 'var(--teal)';
+    markers += `<circle cx="${x}" cy="${y}" r="7" fill="${s.done ? color : '#fff'}" stroke="${color}" stroke-width="2.5"/>`;
+  });
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H+14}" width="100%" height="auto">
+      <path d="M ${sx} ${sy} A ${r} ${r} 0 0 1 ${ex} ${ey}" fill="none" stroke="var(--line)" stroke-width="3"/>
+      <circle cx="${nx}" cy="${ny}" r="9" fill="var(--amber)"/>
+      ${markers}
+    </svg>
+  `;
+  document.getElementById('arcLabelStart') && (document.getElementById('arcLabelStart').textContent = STATE.settings.wakeStart);
+  const pending = stops.filter(s=>!s.done).length;
+  document.getElementById('arcCaption').textContent = pending === 0
+    ? 'All check-ins complete for today.'
+    : `${pending} check-in${pending>1?'s':''} remaining today.`;
+}
+
+/* ---------------- Home cards ---------------- */
+function renderHome(){
+  ensureToday();
+  renderArc();
+  const el = document.getElementById('todayCards');
+  el.innerHTML = '';
+
+  function card(kind, title, sub, done, onClick, dueNow){
+    const d = document.createElement('div');
+    d.className = 'card' + (dueNow && !done ? ' due' : '');
+    d.innerHTML = `<div class="dot ${kind}"></div>
+      <div class="meta"><div class="t">${title}</div><div class="s">${sub}</div></div>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn small' + (done ? ' done' : '');
+    btn.textContent = done ? '✓ Done' : 'Start';
+    btn.disabled = done;
+    btn.onclick = onClick;
+    d.appendChild(btn);
+    el.appendChild(d);
+  }
+
+  const now = new Date();
+  const nowMin = now.getHours()*60+now.getMinutes();
+  const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
+  card('morning', 'Morning check-in', 'How the day is starting', STATE.day.morningDone,
+    ()=>startSurvey('morning'), nowMin >= sh*60+sm);
+
+  STATE.schedule.times.forEach((t, idx)=>{
+    const [th,tm] = t.split(':').map(Number);
+    const done = STATE.day.beepsDone.includes(idx);
+    card('beep', `Check-in ${idx+1} of ${BEEPS_PER_DAY}`, `Scheduled around ${t}`, done,
+      ()=>startSurvey('beep', 'beep-'+idx), nowMin >= th*60+tm);
+  });
+
+  const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
+  card('evening', 'Evening check-in', 'Rounding off the day', STATE.day.eveningDone,
+    ()=>startSurvey('evening'), nowMin >= eh*60+em-30);
+}
+
+function tickClock(){
+  document.getElementById('clockNow').textContent = timeStr(new Date());
+}
+setInterval(()=>{ tickClock(); checkDueBeeps(); }, 30000);
+tickClock();
+
+/* ---------------- Survey engine ---------------- */
+function shuffled(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+const ACTIVITIES = {
+  'Social activity': ['Chatting/meeting with someone','Talking on the phone','Going to a restaurant/cafe/bar','Playing games','Something else'],
+  'Household chore': ['Cleaning','Doing laundry','Cooking','Buying groceries','Something else'],
+  'Working': ['Working for my job','Working on a personal project','Voluntary work','Something else'],
+  'Resting': ['Doing nothing particular','Daydreaming','Watching TV','Laying down','Napping/trying to nap','Something else'],
+  'Sport': ['Walking','Biking','Dancing','Playing tennis','Boxing','Something else'],
+  'Hobby': ['Listening to music','Painting','Reading','Making music','Doing arts and crafts','Something else'],
+  'Self-care': ['Showering/washing','Eating','Getting dressed','Something else'],
+  'Another activity': ['Specify']
+};
+const RELATIONS = ['Partner','Children','Family members','Friends','Colleagues','Neighbor','Someone else'];
+const SLEEP_PROBLEMS = ['I had no problems','Waking up throughout the night','Cannot breathe comfortably','Cough or snore loudly','Trouble falling asleep','Having pain','Feeling too hot or too cold','Restless legs','Other'];
+const NOT_DONE_REASONS = ['I had no energy','It would be too much work','I had too much to do','Physical problems',"I couldn't concentrate",'Something else'];
+
+function q(id, type, text, opts={}){ return Object.assign({ id, type, text }, opts); }
+
+function moodQ(idSuffix=''){
+  return q('mood'+idSuffix, 'slider', 'How are you feeling right now?', { min:'🙁', max:'🙂' });
+}
+
+function buildMorningSurvey(){
+  const fixed = [ moodQ() ];
+  const rand = shuffled([
+    q('rested','slider','How rested do you feel?', {min:'Very tired', max:'Very rested'}),
+    q('sleepQuality','slider','How was your sleep last night?', {min:'Very bad', max:'Very good'}),
+    q('hardMentally','yesno','Was it mentally difficult to get up?'),
+    q('hardPhysically','yesno','Was it physically difficult to get up?'),
+    q('sleepProblems','multi','During the last night, did you have any of these sleeping problems?', { choices: SLEEP_PROBLEMS, otherLabel:'Other' }),
+    q('medTaken','yesno','Did you already take your first dose of medication today?', {
+      followupYes: [ q('medTime','time','At what time did you take it?') ]
+    }),
+  ]);
+  return [...fixed, ...rand];
+}
+
+function buildBeepSurvey(){
+  const rand1 = shuffled([
+    q('motorProblems','slider','To what extent do you experience motor problems right now?', {min:'No problems', max:'Big problems'}),
+    q('onOff','single','Are you feeling ON or OFF dopamine?', { choices:['On','On → Off','Off','Off → On','Overactive',"I'm not sure"] }),
+    q('energy','slider','How energetic are you right now?', {min:'Very tired', max:'Very energetic'}),
+    q('concentration','slider','How is your concentration at the moment?', {min:'Very poor', max:'Very good'}),
+    moodQ('_beep'),
+    q('lastMedTime','time','At what time did you take dopaminergic medication for the last time?'),
+  ]);
+  const fixed2 = [
+    q('location','single','Where are you right now?', { choices:['Home','Work',"Someone else's house",'Outside','Somewhere else'], otherOnLast:true }),
+    q('withSomeone','yesno','Were you with someone during the last 2 hours?', {
+      followupYes: [
+        q('withWho','multi','Who were you with?', { choices: RELATIONS, otherLabel:'Someone else' }),
+        q('interactionQuality','slider','How would you rate the quality of the interaction?', {min:'Very bad', max:'Very good'}),
+      ]
+    }),
+    q('nextActivity','activity','What will you do in the next 2 hours?'),
+  ];
+  const rand3 = shuffled([
+    q('act_effortful_future','slider','How effortful do you think this will be?', {min:'Not at all', max:'Very much'}),
+    q('act_enjoyable_future','slider','How enjoyable do you think this will be?', {min:'Not at all', max:'Very much'}),
+    q('act_should','slider','How much do you feel you should do this?', {min:'Not at all', max:'Very much'}),
+    q('act_whoDecided','single','Did someone tell you to do this or are you deciding by yourself?', {
+      choices:['Me','Someone else'],
+      followupFor:'Someone else',
+      followup: [ q('act_decidedWho','single','Who?', { choices: RELATIONS }) ]
+    }),
+    q('act_likely','slider','How likely are you to do this?', {min:'Not likely', max:'Very likely'}),
+    q('act_othersPresent','yesno','Will other people be with you in this?', {
+      followupYes: [ q('act_othersWho','multi','Who?', { choices: RELATIONS, otherLabel:'Someone else' }) ]
+    }),
+    q('act_initiated','yesno','In the last 2 hours, did you initiate this?', {
+      followupNo: [ q('act_notInitReason','single','Why not?', { choices: NOT_DONE_REASONS }) ]
+    }),
+    q('act_effortful_past','slider','How effortful was it?', {min:'Not at all', max:'Very much'}),
+    q('act_enjoyable_past','slider','How enjoyable was it?', {min:'Not at all', max:'Very much'}),
+    q('act_shouldPast','slider','How much do you feel you had to do it?', {min:'Not at all', max:'Very much'}),
+  ]);
+  const tail = [
+    q('anythingElse','yesno','Did you do anything else? If so, what?', {
+      followupYes: [
+        q('elseActivity','activity','What did you do?'),
+        q('else_effort','slider','How effortful was it?', {min:'Not at all', max:'Very much'}),
+        q('else_enjoy','slider','How rewarding was it?', {min:'Not at all', max:'Very much'}),
+        q('else_obligatory','slider','How obligatory did it feel?', {min:'Not at all', max:'Very much'}),
+      ]
+    })
+  ];
+  return [...rand1, ...fixed2, ...rand3, ...tail];
+}
+
+function buildEveningSurvey(){
+  const fixed = [ moodQ('_evening') ];
+  const rand = shuffled([
+    q('dayRating','slider','How do you rate your day?', {min:'Very bad', max:'Very good'}),
+    q('interactionBurden','slider','If you spent time with people today, did you enjoy the interaction or was it a burden?', {min:'It felt like a burden', max:'I enjoyed it'}),
+    q('noReminders','slider','Today I completed tasks without needing reminders from others.', {min:'I disagree', max:'I agree'}),
+    q('effortToday','slider','How much effort did you put in your activities today?', {min:'Very little', max:'Very much'}),
+    q('motivationToday','slider','How motivated were you during your activities today?', {min:'Not at all', max:'Very much'}),
+    q('dayDifferent','yesno','Was this day different from most days?', {
+      followupYes: [ q('dayDifferentText','text','How was it different?') ]
+    }),
+    q('unusualThing','single','Did something unusual happen that you have not reported throughout the day?', {
+      choices:['Nothing','A social activity','Work','A sport','A leisure activity','Something else']
+    }),
+    q('wantedToDo','yesno',"Is there something that you didn't do, but that you wanted to do?", {
+      followupYes: [
+        q('wantedWhat','single','What was it that you wanted to do?', { choices:['A social activity','Work','A sport','A leisure activity','Something else'] }),
+        q('wantedBlocker','single','What do you think stood in your way?', { choices: NOT_DONE_REASONS }),
+      ]
+    }),
+  ]);
+  return [...fixed, ...rand];
+}
+
+/* ---------------- Survey runtime ---------------- */
+let survey = null; // { type, steps: [q...], index, answers, tag }
+
+function flattenSteps(baseQuestions){
+  // Expand conditional followups into a linear list depending on answers as we go.
+  // We keep base list; followups are appended dynamically during navigation.
+  return baseQuestions;
+}
+
+function startSurvey(type, tag){
+  ensureToday();
+  let base;
+  if(type==='morning') base = buildMorningSurvey();
+  else if(type==='evening') base = buildEveningSurvey();
+  else base = buildBeepSurvey();
+  survey = { type, tag, steps: flattenSteps(base), index:0, answers:{}, dynamicQueue: [] };
+  document.getElementById('surveyLayer').classList.add('open');
+  renderStep();
+}
+
+function currentQuestion(){
+  if(survey.dynamicQueue.length) return survey.dynamicQueue[0];
+  return survey.steps[survey.index];
+}
+
+function renderStep(){
+  const body = document.getElementById('surveyBody');
+  const totalKnown = survey.steps.length;
+  const pct = Math.min(100, Math.round((survey.index/totalKnown)*100));
+  document.getElementById('surveyProgressBar').style.width = pct + '%';
+  document.getElementById('surveyBack').disabled = false;
+
+  const question = currentQuestion();
+  if(!question){ finishSurvey(); return; }
+
+  body.innerHTML = '';
+  const eyebrow = document.createElement('div');
+  eyebrow.className = 'q-eyebrow';
+  eyebrow.textContent = survey.type === 'beep' ? 'Right now' : survey.type === 'morning' ? 'This morning' : 'This evening';
+  body.appendChild(eyebrow);
+
+  const qt = document.createElement('div');
+  qt.className = 'q-text';
+  qt.textContent = question.text;
+  body.appendChild(qt);
+
+  const holder = document.createElement('div');
+  body.appendChild(holder);
+  renderInput(question, holder);
+}
+
+function currentAnswerDefault(question){
+  if(question.type === 'slider') return survey.answers[question.id] ?? 50;
+  return survey.answers[question.id];
+}
+
+function renderInput(question, holder){
+  const existing = survey.answers[question.id];
+
+  if(question.type === 'slider'){
+    const val = currentAnswerDefault(question);
+    holder.innerHTML = `
+      <div class="slider-row"><input type="range" min="0" max="100" value="${val}" id="rangeInput"/></div>
+      <div class="slider-ends"><span>${question.min}</span><span>${question.max}</span></div>
+    `;
+    document.getElementById('rangeInput').addEventListener('input', (e)=>{
+      survey.answers[question.id] = Number(e.target.value);
+    });
+    survey.answers[question.id] = val;
+  }
+  else if(question.type === 'yesno'){
+    ['Yes','No'].forEach(opt=>{
+      const d = document.createElement('div');
+      d.className = 'choice' + (existing===opt ? ' selected' : '');
+      d.textContent = opt;
+      d.onclick = ()=>{ survey.answers[question.id]=opt; renderStep(); };
+      holder.appendChild(d);
+    });
+  }
+  else if(question.type === 'single'){
+    question.choices.forEach(opt=>{
+      const d = document.createElement('div');
+      d.className = 'choice' + (existing===opt ? ' selected' : '');
+      d.textContent = opt;
+      d.onclick = ()=>{
+        survey.answers[question.id]=opt;
+        if(opt==='Somewhere else' || opt==='Something else' || (question.otherOnLast && opt===question.choices[question.choices.length-1])){
+          renderStep(); // will show text below via re-render logic below
+        } else {
+          renderStep();
+        }
+      };
+      holder.appendChild(d);
+    });
+    if(existing && /something else|somewhere else/i.test(existing)){
+      const inp = document.createElement('input');
+      inp.className='other-input'; inp.type='text'; inp.placeholder='Specify…';
+      inp.value = survey.answers[question.id+'_other'] || '';
+      inp.oninput = (e)=>{ survey.answers[question.id+'_other']=e.target.value; };
+      holder.appendChild(inp);
+    }
+  }
+  else if(question.type === 'multi'){
+    const sel = new Set(survey.answers[question.id] || []);
+    question.choices.forEach(opt=>{
+      const d = document.createElement('div');
+      d.className = 'choice' + (sel.has(opt) ? ' selected' : '');
+      d.textContent = opt;
+      d.onclick = ()=>{
+        if(sel.has(opt)) sel.delete(opt); else sel.add(opt);
+        survey.answers[question.id] = [...sel];
+        renderStep();
+      };
+      holder.appendChild(d);
+    });
+    if([...sel].some(o=>/other|something else/i.test(o))){
+      const inp = document.createElement('input');
+      inp.className='other-input'; inp.type='text'; inp.placeholder='Specify…';
+      inp.value = survey.answers[question.id+'_other'] || '';
+      inp.oninput = (e)=>{ survey.answers[question.id+'_other']=e.target.value; };
+      holder.appendChild(inp);
+    }
+  }
+  else if(question.type === 'time'){
+    const inp = document.createElement('input');
+    inp.type='time'; inp.value = existing || '';
+    inp.oninput = (e)=>{ survey.answers[question.id]=e.target.value; };
+    holder.appendChild(inp);
+  }
+  else if(question.type === 'text'){
+    const inp = document.createElement('input');
+    inp.type='text'; inp.placeholder='Type here…'; inp.value = existing || '';
+    inp.oninput = (e)=>{ survey.answers[question.id]=e.target.value; };
+    holder.appendChild(inp);
+  }
+  else if(question.type === 'activity'){
+    Object.entries(ACTIVITIES).forEach(([cat, subs])=>{
+      const g = document.createElement('div');
+      g.className='cat-group';
+      const h = document.createElement('div'); h.className='cat-header'; h.textContent = cat;
+      g.appendChild(h);
+      subs.forEach(sub=>{
+        const label = sub==='Specify' ? cat : sub;
+        const val = cat+' — '+label;
+        const d = document.createElement('div');
+        d.className = 'choice' + (existing===val ? ' selected' : '');
+        d.textContent = label;
+        d.onclick = ()=>{ survey.answers[question.id]=val; renderStep(); };
+        g.appendChild(d);
+      });
+      holder.appendChild(g);
+    });
+    if(existing && /something else|specify/i.test(existing)){
+      const inp = document.createElement('input');
+      inp.className='other-input'; inp.type='text'; inp.placeholder='Specify…';
+      inp.value = survey.answers[question.id+'_other'] || '';
+      inp.oninput = (e)=>{ survey.answers[question.id+'_other']=e.target.value; };
+      holder.appendChild(inp);
+    }
+  }
+}
+
+function pushFollowups(question){
+  const ans = survey.answers[question.id];
+  let toAdd = [];
+  if(question.followupYes && ans==='Yes') toAdd = question.followupYes;
+  if(question.followupNo && ans==='No') toAdd = question.followupNo;
+  if(question.followupFor && ans===question.followupFor) toAdd = question.followup;
+  if(toAdd && toAdd.length){
+    survey.dynamicQueue = [...toAdd, ...survey.dynamicQueue];
+  }
+}
+
+document.getElementById('surveyNext').onclick = ()=>{
+  const question = currentQuestion();
+  if(question.type !== 'slider' && survey.answers[question.id] === undefined){
+    toast('Please answer to continue');
+    return;
+  }
+  pushFollowups(question);
+  if(survey.dynamicQueue.length && survey.dynamicQueue[0] !== question){
+    // a followup was just queued (question itself removed from queue if it was dynamic)
+  }
+  if(survey.dynamicQueue.length && survey.dynamicQueue[0].id !== question.id){
+    // move on to dynamic queue item next render
+  } else if(survey.dynamicQueue.length && survey.dynamicQueue[0].id === question.id){
+    survey.dynamicQueue.shift();
+  }
+  if(survey.dynamicQueue.length){
+    renderStep();
+    return;
+  }
+  survey.index++;
+  if(survey.index >= survey.steps.length){ finishSurvey(); return; }
+  renderStep();
+};
+
+document.getElementById('surveyBack').onclick = ()=>{
+  if(survey.dynamicQueue.length){ /* no-op, keep simple */ }
+  if(survey.index>0){ survey.index--; renderStep(); }
+};
+
+document.getElementById('surveyClose').onclick = ()=>{
+  if(confirm('Discard this check-in?')){
+    document.getElementById('surveyLayer').classList.remove('open');
+    survey = null;
+  }
+};
+
+function finishSurvey(){
+  const entry = {
+    id: uid(),
+    type: survey.type,
+    tag: survey.tag || survey.type,
+    timestamp: new Date().toISOString(),
+    date: STATE.day.date,
+    ...flattenAnswers(survey.answers)
+  };
+  STATE.entries.push(entry);
+  if(survey.type==='morning') STATE.day.morningDone = true;
+  if(survey.type==='evening') STATE.day.eveningDone = true;
+  if(survey.type==='beep' && survey.tag){
+    const idx = Number(survey.tag.split('-')[1]);
+    if(!STATE.day.beepsDone.includes(idx)) STATE.day.beepsDone.push(idx);
+  }
+  saveState();
+  document.getElementById('surveyLayer').classList.remove('open');
+  survey = null;
+  renderHome();
+  toast('Saved — thank you');
+}
+
+function flattenAnswers(ans){
+  const out = {};
+  Object.entries(ans).forEach(([k,v])=>{ out[k] = Array.isArray(v) ? v.join('; ') : v; });
+  return out;
+}
+
+/* ---------------- CSV export ---------------- */
+function toCSV(rows){
+  if(!rows.length) return '';
+  const cols = [];
+  rows.forEach(r=> Object.keys(r).forEach(k=>{ if(!cols.includes(k)) cols.push(k); }));
+  const esc = (v)=>{
+    if(v===undefined || v===null) return '';
+    const s = String(v).replace(/"/g,'""');
+    return /[",\n]/.test(s) ? `"${s}"` : s;
+  };
+  const lines = [cols.join(',')];
+  rows.forEach(r=> lines.push(cols.map(c=>esc(r[c])).join(',')));
+  return lines.join('\n');
+}
+function exportCSV(){
+  const csv = toCSV(STATE.entries);
+  if(!csv){ toast('No entries yet'); return; }
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `ema-export-${todayStr()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('btnExport').onclick = exportCSV;
+
+/* ---------------- History ---------------- */
+document.getElementById('btnHistory').onclick = ()=>{
+  const n = STATE.entries.length;
+  const days = new Set(STATE.entries.map(e=>e.date)).size;
+  alert(n === 0 ? 'No entries yet.' : `${n} entries recorded across ${days} day(s).\nUse "Export CSV" to see full detail.`);
+};
+
+/* ---------------- Settings ---------------- */
+document.getElementById('btnSettings').onclick = async ()=>{
+  const ws = prompt('Wake-up time (HH:MM) — first check-in window starts here:', STATE.settings.wakeStart);
+  if(ws && /^\d{2}:\d{2}$/.test(ws)) STATE.settings.wakeStart = ws;
+  const we = prompt('Wind-down time (HH:MM) — evening check-in happens near here:', STATE.settings.wakeEnd);
+  if(we && /^\d{2}:\d{2}$/.test(we)) STATE.settings.wakeEnd = we;
+  saveState();
+  STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
+  saveState();
+  const granted = await requestNotifPermission();
+  toast(granted ? 'Settings saved · notifications on' : 'Settings saved');
+  renderHome();
+};
+
+/* ---------------- Toast ---------------- */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ---------------- Boot ---------------- */
+(async function boot(){
+  ensureToday();
+  await initSW();
+  renderHome();
+  checkDueBeeps();
+  if('Notification' in window && Notification.permission === 'default'){
+    setTimeout(()=>{
+      if(confirm('Enable notifications for your 6 daily check-ins?')) requestNotifPermission();
+    }, 600);
+  }
+})();
+</script>
+</body>
+</html>
