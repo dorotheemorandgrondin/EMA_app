@@ -40,17 +40,34 @@
   .topbar .clock{ font-size:13px; color:var(--ink-soft); }
   .brand{ font-size:20px; }
 
-  /* --- Day arc signature --- */
+  /* --- Day rhythm track (checkpoint overview) --- */
   .arc-card{
     background: linear-gradient(180deg, var(--paper-2), var(--paper));
     border:1px solid var(--line);
     border-radius: var(--radius);
-    padding: 18px 16px 10px;
+    padding: 20px 14px 16px;
     margin-bottom:16px;
   }
-  .arc-wrap{ position:relative; width:100%; }
-  .arc-label{ display:flex; justify-content:space-between; font-size:11px; color:var(--ink-soft); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em;}
-  .arc-caption{ text-align:center; font-size:13px; color:var(--ink-soft); margin-top:6px;}
+  .rhythm-track{ display:flex; align-items:flex-start; justify-content:space-between; position:relative; padding:0 2px; }
+  .rhythm-track::before{ content:''; position:absolute; left:14px; right:14px; top:11px; height:2px; background:var(--line); z-index:0; }
+  .r-node{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+  .r-dot{ width:22px; height:22px; border-radius:50%; border:2.5px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; }
+  .r-dot.done{ background:var(--teal); border-color:var(--teal); }
+  .r-dot.done.morning{ background:var(--dawn); border-color:var(--dawn); }
+  .r-dot.done.evening{ background:var(--dusk); border-color:var(--dusk); }
+  .r-dot.due{ border-color:var(--amber); box-shadow:0 0 0 4px rgba(217,134,59,0.16); background:#fff; }
+  .r-dot.missed{ background:var(--paper-2); border-color:var(--line); }
+  .r-dot.missed::after{ content:'—'; color:var(--ink-soft); font-weight:700; }
+  .r-dot.upcoming{ background:#fff; }
+  .r-label{ font-size:9.5px; color:var(--ink-soft); white-space:nowrap; font-family:'SFMono-Regular',monospace; }
+  .arc-caption{ text-align:center; font-size:13px; color:var(--ink-soft); margin-top:14px;}
+  .arc-legend{ display:flex; justify-content:center; gap:14px; margin-top:10px; flex-wrap:wrap; }
+  .arc-legend .item{ display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-soft); }
+  .arc-legend .swatch{ width:9px; height:9px; border-radius:50%; border:2px solid var(--line); flex:0 0 auto; }
+  .arc-legend .swatch.done{ background:var(--teal); border-color:var(--teal); }
+  .arc-legend .swatch.due{ border-color:var(--amber); box-shadow:0 0 0 2px rgba(217,134,59,0.16); }
+  .arc-legend .swatch.missed{ background:var(--paper-2); border-color:var(--line); }
+  .arc-legend .swatch.upcoming{ background:#fff; }
 
   .cards{ display:flex; flex-direction:column; gap:12px; }
   .card{
@@ -58,6 +75,7 @@
     padding:16px; display:flex; align-items:center; gap:12px;
   }
   .card.due{ border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
+  .card.missed{ opacity:.55; }
   .card .dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
   .dot.morning{ background:var(--dawn); }
   .dot.beep{ background:var(--teal); }
@@ -75,6 +93,7 @@
   .btn.small{ padding:7px 10px; font-size:12.5px; }
   .btn:disabled{ opacity:.45; cursor:default; }
   .btn.done{ background: var(--good); }
+  .btn.muted{ background: var(--paper-2); color: var(--ink-soft); }
 
   .section-title{ font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft); margin: 22px 0 8px 4px; }
 
@@ -90,6 +109,7 @@
   .survey-body{ flex:1; overflow-y:auto; padding: 22px 20px 100px; max-width:480px; margin:0 auto; width:100%; }
   .q-eyebrow{ font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;}
   .q-text{ font-size:19px; line-height:1.35; font-family:Georgia,serif; margin-bottom:22px; }
+  .act-hl{ background:#F3D9B1; color:var(--teal-deep); padding:1px 7px; border-radius:7px; font-weight:600; }
   .survey-foot{ position:fixed; bottom:0; left:0; right:0; padding:14px 20px 22px; background:linear-gradient(180deg, transparent, var(--paper) 30%); display:flex; justify-content:space-between; gap:10px;}
   .survey-foot .btn{ flex:1; padding:13px; font-size:15px; }
 
@@ -119,6 +139,19 @@
   .settings-row:last-child{ border-bottom:none; }
   .settings-row input[type=time]{ width:auto; }
   select{ padding:9px 10px; border-radius:10px; border:1px solid var(--line); font-family:inherit; font-size:14px; background:#fff;}
+
+  #settingsLayer{ position:fixed; inset:0; background:var(--paper); z-index:51; display:none; flex-direction:column; }
+  #settingsLayer.open{ display:flex; }
+  .settings-field{ margin-bottom:22px; }
+  .settings-field label{ display:block; font-weight:600; font-size:14.5px; margin-bottom:8px; }
+  .settings-field input[type=text], .settings-field input[type=time]{ width:100%; }
+  .settings-hint{ font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.4; }
+  .toggle-row{ display:flex; gap:10px; }
+  .toggle-btn{ flex:1; }
+  .toggle-btn.active{ background:var(--teal); color:#fff; border-color:var(--teal); }
+  .pilot-row{ display:flex; align-items:center; gap:10px; margin-top:6px; }
+  .pilot-row input[type=checkbox]{ width:18px; height:18px; accent-color:var(--teal); }
+  .pilot-row label{ font-size:13px; color:var(--ink-soft); margin:0; font-weight:500; }
 </style>
 </head>
 <body>
@@ -131,6 +164,7 @@
   <div class="arc-card">
     <div class="arc-wrap" id="arcWrap"></div>
     <div class="arc-caption" id="arcCaption">Loading today…</div>
+    <div class="arc-legend" id="arcLegend"></div>
   </div>
 
   <div class="section-title">Today</div>
@@ -155,6 +189,45 @@
   </div>
 </div>
 
+<div id="settingsLayer">
+  <div class="survey-head">
+    <button class="x" id="settingsClose">✕</button>
+    <div style="font-weight:600;">Settings</div>
+  </div>
+  <div class="survey-body" id="settingsBody" style="padding-top:22px;">
+    <div class="settings-field">
+      <label>Participant ID</label>
+      <input type="text" id="setParticipantId" placeholder="As given by your researcher" />
+    </div>
+    <div class="settings-field">
+      <label>Do you have Parkinson's disease?</label>
+      <div class="toggle-row">
+        <button class="btn ghost toggle-btn" id="setPdYes" data-val="yes">Yes</button>
+        <button class="btn ghost toggle-btn" id="setPdNo" data-val="no">No</button>
+      </div>
+      <div class="settings-hint">If no, medication and motor-symptom questions will be skipped.</div>
+    </div>
+    <div class="settings-field">
+      <label>What time do you usually wake up?</label>
+      <input type="time" id="setWakeTime" />
+      <div class="settings-hint">Your morning check-in can be done any time, but a reminder comes 15 minutes after this.</div>
+    </div>
+    <div class="settings-field">
+      <label>What time do you usually go to bed?</label>
+      <input type="time" id="setBedTime" />
+      <div class="settings-hint">Your evening check-in can be done any time, but a reminder comes 15 minutes before this. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
+    </div>
+    <button class="btn ghost" id="setEnableNotif" style="width:100%; margin-top:8px;">Enable notifications</button>
+    <div class="pilot-row">
+      <input type="checkbox" id="setPilotMode" />
+      <label for="setPilotMode">Pilot / test mode</label>
+    </div>
+  </div>
+  <div class="survey-foot">
+    <button class="btn" id="settingsSave" style="flex:1;">Save</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -168,7 +241,10 @@ const STORE_KEY = 'ema_state_v1';
 const WAKE_START_DEFAULT = '08:00';
 const WAKE_END_DEFAULT = '22:00';
 const BEEPS_PER_DAY = 6;
-const MIN_GAP_MIN = 75; // minimum minutes between beeps
+const MIN_GAP_MIN = 100; // minimum minutes between beeps (targets ~2h apart)
+const BEEP_WINDOW_MIN = 30; // how long each beep stays open before it's missed
+const MORNING_NOTIF_OFFSET = 15; // minutes after wake time
+const EVENING_NOTIF_OFFSET = 15; // minutes before bed time
 
 function todayStr(d = new Date()){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -176,18 +252,24 @@ function todayStr(d = new Date()){
 function pad(n){ return String(n).padStart(2,'0'); }
 function timeStr(d){ return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function nowMinutes(){ const d = new Date(); return d.getHours()*60 + d.getMinutes(); }
+function minToHHMM(m){ m = ((m%1440)+1440)%1440; return pad(Math.floor(m/60)) + ':' + pad(Math.floor(m%60)); }
 
 function loadState(){
   let raw = localStorage.getItem(STORE_KEY);
   let state = raw ? JSON.parse(raw) : null;
   if(!state){
     state = {
-      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false },
+      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false, participantId:'', hasParkinsons:null, pilotMode:false },
       schedule: { date: null, times: [] },
       entries: [],
-      day: { date: null, morningDone:false, eveningDone:false, beepsDone: [] }
+      day: { date: null, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] }
     };
   }
+  if(!state.day.pendingActivities) state.day.pendingActivities = [];
+  if(state.settings.participantId === undefined) state.settings.participantId = '';
+  if(state.settings.hasParkinsons === undefined) state.settings.hasParkinsons = null;
+  if(state.settings.pilotMode === undefined) state.settings.pilotMode = false;
   return state;
 }
 let STATE = loadState();
@@ -196,7 +278,7 @@ function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
 function ensureToday(){
   const t = todayStr();
   if(STATE.day.date !== t){
-    STATE.day = { date: t, morningDone:false, eveningDone:false, beepsDone: [] };
+    STATE.day = { date: t, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] };
   }
   if(STATE.schedule.date !== t){
     STATE.schedule = { date: t, times: generateBeepTimes() };
@@ -207,8 +289,9 @@ function ensureToday(){
 function generateBeepTimes(){
   const [sh, sm] = STATE.settings.wakeStart.split(':').map(Number);
   const [eh, em] = STATE.settings.wakeEnd.split(':').map(Number);
-  const startMin = sh*60+sm, endMin = eh*60+em;
-  const span = endMin - startMin;
+  const startMin = sh*60+sm + 30; // 30 min after wake (after the morning window)
+  const endMin = eh*60+em - 30;   // 30 min before bed (before the evening window)
+  const span = Math.max(endMin - startMin, MIN_GAP_MIN*BEEPS_PER_DAY);
   const slot = span / BEEPS_PER_DAY;
   const times = [];
   for(let i=0;i<BEEPS_PER_DAY;i++){
@@ -225,6 +308,22 @@ function generateBeepTimes(){
     if(times[i]-times[i-1] < MIN_GAP_MIN) times[i] = times[i-1] + MIN_GAP_MIN;
   }
   return times.map(m => pad(Math.floor(m/60)) + ':' + pad(m%60));
+}
+
+/* Beep availability: a strict window unless pilot mode is on. */
+function beepWindowMinutes(idx){
+  const [th,tm] = STATE.schedule.times[idx].split(':').map(Number);
+  const start = th*60+tm;
+  return { start, end: start + BEEP_WINDOW_MIN };
+}
+function beepStatus(idx){
+  if(STATE.day.beepsDone.includes(idx)) return 'done';
+  if(STATE.settings.pilotMode) return 'available';
+  const w = beepWindowMinutes(idx);
+  const now = nowMinutes();
+  if(now < w.start) return 'upcoming';
+  if(now <= w.end) return 'available';
+  return 'missed';
 }
 
 /* ---------------- Notifications ---------------- */
@@ -269,24 +368,23 @@ function markNotified(tag){ notifiedTags.add(tag); sessionStorage.setItem('notif
 
 function checkDueBeeps(){
   ensureToday();
-  const now = new Date();
-  const nowMin = now.getHours()*60+now.getMinutes();
-  // morning: encourage after wake start if not done
+  const nowMin = nowMinutes();
+  // morning: reminder 15 min after wake time, if not already done
   const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
-  if(!STATE.day.morningDone && nowMin >= sh*60+sm && !notifiedTags.has('morning-'+STATE.day.date)){
+  if(!STATE.day.morningDone && nowMin >= (sh*60+sm+MORNING_NOTIF_OFFSET) && !notifiedTags.has('morning-'+STATE.day.date)){
     fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
     markNotified('morning-'+STATE.day.date);
   }
   STATE.schedule.times.forEach((t, idx)=>{
-    const [th,tm] = t.split(':').map(Number);
+    const w = beepWindowMinutes(idx);
     const tag = 'beep-'+idx+'-'+STATE.day.date;
-    if(nowMin >= th*60+tm && !STATE.day.beepsDone.includes(idx) && !notifiedTags.has(tag)){
-      fireNotification('Quick check-in', 'A couple of questions about right now.', 'beep-'+idx);
+    if(nowMin >= w.start && !STATE.day.beepsDone.includes(idx) && !notifiedTags.has(tag)){
+      fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
       markNotified(tag);
     }
   });
   const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
-  if(!STATE.day.eveningDone && nowMin >= eh*60+em - 30 && !notifiedTags.has('evening-'+STATE.day.date)){
+  if(!STATE.day.eveningDone && nowMin >= (eh*60+em-EVENING_NOTIF_OFFSET) && !notifiedTags.has('evening-'+STATE.day.date)){
     fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
     markNotified('evening-'+STATE.day.date);
   }
@@ -297,47 +395,41 @@ function checkDueBeeps(){
 function renderArc(){
   ensureToday();
   const wrap = document.getElementById('arcWrap');
-  const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
-  const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
-  const startMin = sh*60+sm, endMin = eh*60+em;
-  const now = new Date();
-  const nowMin = Math.min(Math.max(now.getHours()*60+now.getMinutes(), startMin), endMin);
-  const frac = (nowMin-startMin)/(endMin-startMin);
+  const nodes = [];
 
-  const W = 420, H = 150, cx=W/2, cy=140, r=118;
-  function pt(f){
-    const ang = Math.PI + f*Math.PI; // left to right, top arc
-    return [cx + r*Math.cos(ang), cy + r*Math.sin(ang)];
-  }
-  const [sx,sy] = pt(0), [ex,ey] = pt(1), [nx,ny] = pt(frac);
-
-  let markers = '';
-  const stops = [{f:0, done: STATE.day.morningDone, kind:'morning'}]
-    .concat(STATE.schedule.times.map((t,idx)=>{
-      const [th,tm] = t.split(':').map(Number);
-      const f = ((th*60+tm)-startMin)/(endMin-startMin);
-      return { f, done: STATE.day.beepsDone.includes(idx), kind:'beep' };
-    }))
-    .concat([{f:1, done: STATE.day.eveningDone, kind:'evening'}]);
-
-  stops.forEach(s=>{
-    const [x,y] = pt(Math.min(Math.max(s.f,0),1));
-    const color = s.kind==='morning' ? 'var(--dawn)' : s.kind==='evening' ? 'var(--dusk)' : 'var(--teal)';
-    markers += `<circle cx="${x}" cy="${y}" r="7" fill="${s.done ? color : '#fff'}" stroke="${color}" stroke-width="2.5"/>`;
+  nodes.push({ kind:'morning', label: STATE.settings.wakeStart, done: STATE.day.morningDone, status: STATE.day.morningDone ? 'done' : 'available' });
+  STATE.schedule.times.forEach((t, idx)=>{
+    const done = STATE.day.beepsDone.includes(idx);
+    const status = done ? 'done' : beepStatus(idx);
+    nodes.push({ kind:'beep', label:t, done, status });
   });
+  nodes.push({ kind:'evening', label: STATE.settings.wakeEnd, done: STATE.day.eveningDone, status: STATE.day.eveningDone ? 'done' : 'available' });
 
   wrap.innerHTML = `
-    <svg viewBox="0 0 ${W} ${H+14}" width="100%" height="auto">
-      <path d="M ${sx} ${sy} A ${r} ${r} 0 0 1 ${ex} ${ey}" fill="none" stroke="var(--line)" stroke-width="3"/>
-      <circle cx="${nx}" cy="${ny}" r="9" fill="var(--amber)"/>
-      ${markers}
-    </svg>
+    <div class="rhythm-track">
+      ${nodes.map(n=>{
+        const cls = ['r-dot', n.kind];
+        if(n.done) cls.push('done');
+        else if(n.status==='available') cls.push('due');
+        else if(n.status==='missed') cls.push('missed');
+        else cls.push('upcoming');
+        const glyph = n.done ? '✓' : '';
+        return `<div class="r-node"><div class="${cls.join(' ')}">${glyph}</div><div class="r-label">${n.label}</div></div>`;
+      }).join('')}
+    </div>
   `;
-  document.getElementById('arcLabelStart') && (document.getElementById('arcLabelStart').textContent = STATE.settings.wakeStart);
-  const pending = stops.filter(s=>!s.done).length;
-  document.getElementById('arcCaption').textContent = pending === 0
-    ? 'All check-ins complete for today.'
-    : `${pending} check-in${pending>1?'s':''} remaining today.`;
+
+  const done = nodes.filter(n=>n.done).length;
+  const missed = nodes.filter(n=>!n.done && n.status==='missed').length;
+  const parts = [`${done} of ${nodes.length} done`];
+  if(missed) parts.push(`${missed} missed`);
+  document.getElementById('arcCaption').textContent = parts.join(' · ');
+  document.getElementById('arcLegend').innerHTML = `
+    <div class="item"><div class="swatch done"></div>Done</div>
+    <div class="item"><div class="swatch due"></div>Open now</div>
+    <div class="item"><div class="swatch upcoming"></div>Upcoming</div>
+    <div class="item"><div class="swatch missed"></div>Missed</div>
+  `;
 }
 
 /* ---------------- Home cards ---------------- */
@@ -347,36 +439,42 @@ function renderHome(){
   const el = document.getElementById('todayCards');
   el.innerHTML = '';
 
-  function card(kind, title, sub, done, onClick, dueNow){
+  function card(kind, title, sub, state, onClick){
+    // state: 'done' | 'available' | 'upcoming' | 'missed'
     const d = document.createElement('div');
-    d.className = 'card' + (dueNow && !done ? ' due' : '');
+    d.className = 'card' + (state==='available' ? ' due' : '') + (state==='missed' ? ' missed' : '');
     d.innerHTML = `<div class="dot ${kind}"></div>
       <div class="meta"><div class="t">${title}</div><div class="s">${sub}</div></div>`;
     const btn = document.createElement('button');
-    btn.className = 'btn small' + (done ? ' done' : '');
-    btn.textContent = done ? '✓ Done' : 'Start';
-    btn.disabled = done;
-    btn.onclick = onClick;
+    if(state==='done'){ btn.className='btn small done'; btn.textContent='✓ Done'; btn.disabled=true; }
+    else if(state==='missed'){ btn.className='btn small muted'; btn.textContent='Missed'; btn.disabled=true; }
+    else if(state==='upcoming'){ btn.className='btn small ghost'; btn.textContent='Not yet'; btn.disabled=true; }
+    else { btn.className='btn small'; btn.textContent='Start'; btn.disabled=false; btn.onclick=onClick; }
     d.appendChild(btn);
     el.appendChild(d);
   }
 
-  const now = new Date();
-  const nowMin = now.getHours()*60+now.getMinutes();
-  const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
-  card('morning', 'Morning check-in', 'How the day is starting', STATE.day.morningDone,
-    ()=>startSurvey('morning'), nowMin >= sh*60+sm);
+  card('morning', 'Morning check-in', 'How the day is starting',
+    STATE.day.morningDone ? 'done' : 'available', ()=>startSurvey('morning'));
 
   STATE.schedule.times.forEach((t, idx)=>{
-    const [th,tm] = t.split(':').map(Number);
     const done = STATE.day.beepsDone.includes(idx);
-    card('beep', `Check-in ${idx+1} of ${BEEPS_PER_DAY}`, `Scheduled around ${t}`, done,
-      ()=>startSurvey('beep', 'beep-'+idx), nowMin >= th*60+tm);
+    const status = done ? 'done' : beepStatus(idx);
+    const w = beepWindowMinutes(idx);
+    const sub = status==='missed' ? `Window closed (was ${t}\u2013${minToHHMM(w.end)})` : `Window ${t}\u2013${minToHHMM(w.end)}`;
+    card('beep', `Check-in ${idx+1} of ${BEEPS_PER_DAY}`, sub, status,
+      ()=>startSurvey('beep', 'beep-'+idx));
   });
 
-  const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
-  card('evening', 'Evening check-in', 'Rounding off the day', STATE.day.eveningDone,
-    ()=>startSurvey('evening'), nowMin >= eh*60+em-30);
+  card('evening', 'Evening check-in', 'Rounding off the day',
+    STATE.day.eveningDone ? 'done' : 'available', ()=>startSurvey('evening'));
+
+  if(STATE.settings.pilotMode){
+    const note = document.createElement('div');
+    note.style.cssText = 'text-align:center;font-size:11.5px;color:var(--amber);margin-top:10px;font-weight:600;';
+    note.textContent = 'Pilot mode is on — time windows are not enforced.';
+    el.appendChild(note);
+  }
 }
 
 function tickClock(){
@@ -402,9 +500,28 @@ const ACTIVITIES = {
   'Self-care': ['Showering/washing','Eating','Getting dressed','Something else'],
   'Another activity': ['Specify']
 };
+function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40); }
+function isOtherLike(val){ return /something else|somewhere else|someone else|another activity/i.test(val || ''); }
+function activityChoiceList(){
+  const list = [];
+  Object.entries(ACTIVITIES).forEach(([cat, subs])=>{
+    subs.forEach(sub=>{
+      const isSpecify = sub === 'Specify';
+      const label = isSpecify ? cat : sub;
+      const value = cat + ' — ' + label;
+      const needsOther = isSpecify || /something else/i.test(sub);
+      list.push({ category: cat, value, label, needsOther, key: slug(value) });
+    });
+  });
+  return list;
+}
 const RELATIONS = ['Partner','Children','Family members','Friends','Colleagues','Neighbor','Someone else'];
 const SLEEP_PROBLEMS = ['I had no problems','Waking up throughout the night','Cannot breathe comfortably','Cough or snore loudly','Trouble falling asleep','Having pain','Feeling too hot or too cold','Restless legs','Other'];
 const NOT_DONE_REASONS = ['I had no energy','It would be too much work','I had too much to do','Physical problems',"I couldn't concentrate",'Something else'];
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function lowerFirst(s){ return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
+function hi(label){ return '<span class="act-hl">' + escHtml(lowerFirst(label)) + '</span>'; }
 
 function q(id, type, text, opts={}){ return Object.assign({ id, type, text }, opts); }
 
@@ -412,30 +529,37 @@ function moodQ(idSuffix=''){
   return q('mood'+idSuffix, 'slider', 'How are you feeling right now?', { min:'🙁', max:'🙂' });
 }
 
+function isPD(){ return STATE.settings.hasParkinsons !== false; }
+
 function buildMorningSurvey(){
   const fixed = [ moodQ() ];
-  const rand = shuffled([
+  const optionalQs = [
     q('rested','slider','How rested do you feel?', {min:'Very tired', max:'Very rested'}),
     q('sleepQuality','slider','How was your sleep last night?', {min:'Very bad', max:'Very good'}),
     q('hardMentally','yesno','Was it mentally difficult to get up?'),
     q('hardPhysically','yesno','Was it physically difficult to get up?'),
-    q('sleepProblems','multi','During the last night, did you have any of these sleeping problems?', { choices: SLEEP_PROBLEMS, otherLabel:'Other' }),
-    q('medTaken','yesno','Did you already take your first dose of medication today?', {
+    q('sleepProblems','multi','During the last night, did you have any of these sleeping problems?', { choices: SLEEP_PROBLEMS, otherLabel:'Other', exclusiveOption:'I had no problems' }),
+    isPD() && q('medTaken','yesno','Did you already take your first dose of medication today?', {
       followupYes: [ q('medTime','time','At what time did you take it?') ]
     }),
-  ]);
+  ].filter(Boolean);
+  const rand = shuffled(optionalQs);
   return [...fixed, ...rand];
 }
 
-function buildBeepSurvey(){
-  const rand1 = shuffled([
-    q('motorProblems','slider','To what extent do you experience motor problems right now?', {min:'No problems', max:'Big problems'}),
-    q('onOff','single','Are you feeling ON or OFF dopamine?', { choices:['On','On → Off','Off','Off → On','Overactive',"I'm not sure"] }),
+function buildBeepSurvey(beepIndex){
+  const isFirst = beepIndex === 0;
+  const isLast = beepIndex === BEEPS_PER_DAY - 1;
+
+  const stateQs = [
+    isPD() && q('motorProblems','slider','To what extent do you experience motor problems right now?', {min:'No problems', max:'Big problems'}),
+    isPD() && q('onOff','single','Are you feeling ON or OFF dopamine?', { choices:['On','On → Off','Off','Off → On','Overactive',"I'm not sure"] }),
     q('energy','slider','How energetic are you right now?', {min:'Very tired', max:'Very energetic'}),
     q('concentration','slider','How is your concentration at the moment?', {min:'Very poor', max:'Very good'}),
     moodQ('_beep'),
-    q('lastMedTime','time','At what time did you take dopaminergic medication for the last time?'),
-  ]);
+    isPD() && q('lastMedTime','time','At what time did you take dopaminergic medication for the last time?'),
+  ].filter(Boolean);
+  const rand1 = shuffled(stateQs);
   const fixed2 = [
     q('location','single','Where are you right now?', { choices:['Home','Work',"Someone else's house",'Outside','Somewhere else'], otherOnLast:true }),
     q('withSomeone','yesno','Were you with someone during the last 2 hours?', {
@@ -444,39 +568,52 @@ function buildBeepSurvey(){
         q('interactionQuality','slider','How would you rate the quality of the interaction?', {min:'Very bad', max:'Very good'}),
       ]
     }),
-    q('nextActivity','activity','What will you do in the next 2 hours?'),
   ];
-  const rand3 = shuffled([
-    q('act_effortful_future','slider','How effortful do you think this will be?', {min:'Not at all', max:'Very much'}),
-    q('act_enjoyable_future','slider','How enjoyable do you think this will be?', {min:'Not at all', max:'Very much'}),
-    q('act_should','slider','How much do you feel you should do this?', {min:'Not at all', max:'Very much'}),
-    q('act_whoDecided','single','Did someone tell you to do this or are you deciding by yourself?', {
-      choices:['Me','Someone else'],
-      followupFor:'Someone else',
-      followup: [ q('act_decidedWho','single','Who?', { choices: RELATIONS }) ]
-    }),
-    q('act_likely','slider','How likely are you to do this?', {min:'Not likely', max:'Very likely'}),
-    q('act_othersPresent','yesno','Will other people be with you in this?', {
-      followupYes: [ q('act_othersWho','multi','Who?', { choices: RELATIONS, otherLabel:'Someone else' }) ]
-    }),
-    q('act_initiated','yesno','In the last 2 hours, did you initiate this?', {
-      followupNo: [ q('act_notInitReason','single','Why not?', { choices: NOT_DONE_REASONS }) ]
-    }),
-    q('act_effortful_past','slider','How effortful was it?', {min:'Not at all', max:'Very much'}),
-    q('act_enjoyable_past','slider','How enjoyable was it?', {min:'Not at all', max:'Very much'}),
-    q('act_shouldPast','slider','How much do you feel you had to do it?', {min:'Not at all', max:'Very much'}),
-  ]);
-  const tail = [
-    q('anythingElse','yesno','Did you do anything else? If so, what?', {
+
+  // --- Retrospective: ask about activities planned at previous beeps,
+  // most recently planned first, then older still-outstanding ones. ---
+  let retro = [];
+  if(!isFirst){
+    const pending = (STATE.day.pendingActivities || []).slice().sort((a,b)=> b.addedAt - a.addedAt);
+    pending.forEach(item=>{
+      retro.push(q('retro_did_'+item.id, 'yesno', `Did you do: ${hi(item.label)}?`, {
+        html: true,
+        pendingId: item.id,
+        followupYes: [
+          q('retro_effort_'+item.id, 'slider', 'How effortful was it?', {min:'Not at all', max:'Very much'}),
+          q('retro_enjoy_'+item.id, 'slider', 'How enjoyable was it?', {min:'Not at all', max:'Very much'}),
+          q('retro_should_'+item.id, 'slider', 'How much did you feel you had to do it?', {min:'Not at all', max:'Very much'}),
+        ],
+        // Only ask the reason the first time it's marked not-done; later beeps
+        // just re-ask yes/no without repeating the reason question.
+        followupNo: item.reasonAsked ? [] : [
+          q('retro_reason_'+item.id, 'single', 'Why not?', { choices: NOT_DONE_REASONS }),
+        ],
+      }));
+    });
+    // Catch-all for anything unplanned they also did
+    retro.push(q('anythingElse','yesno','Did you do anything else during the last 2 hours that we haven\u2019t asked about?', {
       followupYes: [
-        q('elseActivity','activity','What did you do?'),
+        q('elseActivity','activity','What did you do?', { hint:'Select as many as apply.' }),
         q('else_effort','slider','How effortful was it?', {min:'Not at all', max:'Very much'}),
         q('else_enjoy','slider','How rewarding was it?', {min:'Not at all', max:'Very much'}),
         q('else_obligatory','slider','How obligatory did it feel?', {min:'Not at all', max:'Very much'}),
       ]
-    })
-  ];
-  return [...rand1, ...fixed2, ...rand3, ...tail];
+    }));
+  }
+
+  // --- Prospective: what will you do in the next 2 hours (multi-select).
+  // Follow-up questions are generated per selected activity once this
+  // question is answered (see pushFollowups/expandActivities). ---
+  let prospective = [];
+  if(!isLast){
+    prospective.push(q('nextActivity','activity','What will you do in the next 2 hours?', {
+      hint:'Select as many as you plan to do.',
+      expandActivities: true,
+    }));
+  }
+
+  return [...rand1, ...fixed2, ...retro, ...prospective];
 }
 
 function buildEveningSurvey(){
@@ -504,36 +641,40 @@ function buildEveningSurvey(){
 }
 
 /* ---------------- Survey runtime ---------------- */
-let survey = null; // { type, steps: [q...], index, answers, tag }
-
-function flattenSteps(baseQuestions){
-  // Expand conditional followups into a linear list depending on answers as we go.
-  // We keep base list; followups are appended dynamically during navigation.
-  return baseQuestions;
-}
+let survey = null; // { type, timeline: [q...], pos, answers, tag }
 
 function startSurvey(type, tag){
   ensureToday();
   let base;
+  let beepIndex = null;
   if(type==='morning') base = buildMorningSurvey();
   else if(type==='evening') base = buildEveningSurvey();
-  else base = buildBeepSurvey();
-  survey = { type, tag, steps: flattenSteps(base), index:0, answers:{}, dynamicQueue: [] };
+  else {
+    beepIndex = tag ? Number(tag.split('-')[1]) : 0;
+    if(beepStatus(beepIndex) !== 'available' && !STATE.day.beepsDone.includes(beepIndex)){
+      toast(beepStatus(beepIndex)==='missed' ? 'This check-in window has closed' : 'Not open yet');
+      renderHome();
+      return;
+    }
+    base = buildBeepSurvey(beepIndex);
+  }
+  // timeline is a flat, mutable list — follow-up questions are spliced in
+  // right after the question that triggered them, so Back always walks the
+  // exact questions actually shown, in order, with no separate queue.
+  survey = { type, tag, beepIndex, timeline: base.slice(), pos:0, answers:{}, touched: new Set() };
   document.getElementById('surveyLayer').classList.add('open');
   renderStep();
 }
 
 function currentQuestion(){
-  if(survey.dynamicQueue.length) return survey.dynamicQueue[0];
-  return survey.steps[survey.index];
+  return survey.timeline[survey.pos];
 }
 
 function renderStep(){
   const body = document.getElementById('surveyBody');
-  const totalKnown = survey.steps.length;
-  const pct = Math.min(100, Math.round((survey.index/totalKnown)*100));
+  const pct = Math.min(100, Math.round((survey.pos/survey.timeline.length)*100));
   document.getElementById('surveyProgressBar').style.width = pct + '%';
-  document.getElementById('surveyBack').disabled = false;
+  document.getElementById('surveyBack').disabled = (survey.pos === 0);
 
   const question = currentQuestion();
   if(!question){ finishSurvey(); return; }
@@ -546,32 +687,83 @@ function renderStep(){
 
   const qt = document.createElement('div');
   qt.className = 'q-text';
-  qt.textContent = question.text;
+  if(question.html){ qt.innerHTML = question.text; } else { qt.textContent = question.text; }
   body.appendChild(qt);
+
+  if(question.hint){
+    const hint = document.createElement('div');
+    hint.className = 'q-eyebrow';
+    hint.style.marginTop = '-16px';
+    hint.style.marginBottom = '16px';
+    hint.textContent = question.hint;
+    body.appendChild(hint);
+  }
 
   const holder = document.createElement('div');
   body.appendChild(holder);
   renderInput(question, holder);
+  refreshNextButton();
 }
 
-function currentAnswerDefault(question){
-  if(question.type === 'slider') return survey.answers[question.id] ?? 50;
-  return survey.answers[question.id];
+/* Whether the current answer(s) for a question satisfy the unskippable rule */
+function validateStep(question){
+  if(!question) return false;
+  const ans = survey.answers[question.id];
+  if(question.type === 'slider') return survey.touched.has(question.id);
+  if(question.type === 'yesno') return ans === 'Yes' || ans === 'No';
+  if(question.type === 'time' || question.type === 'text') return !!(ans && String(ans).trim());
+  if(question.type === 'single'){
+    if(ans === undefined) return false;
+    if(isOtherLike(ans)){
+      const other = survey.answers[question.id+'_other'];
+      return !!(other && other.trim());
+    }
+    return true;
+  }
+  if(question.type === 'multi'){
+    if(!ans || !ans.length) return false;
+    if(ans.some(isOtherLike)){
+      const other = survey.answers[question.id+'_other'];
+      return !!(other && other.trim());
+    }
+    return true;
+  }
+  if(question.type === 'activity'){
+    if(!ans || !ans.length) return false;
+    for(const item of ans){
+      if(item.needsOther){
+        const other = survey.answers[question.id+'_other_'+item.key];
+        if(!other || !other.trim()) return false;
+      }
+    }
+    return true;
+  }
+  return true;
+}
+
+function refreshNextButton(){
+  const btn = document.getElementById('surveyNext');
+  btn.disabled = !validateStep(currentQuestion());
 }
 
 function renderInput(question, holder){
   const existing = survey.answers[question.id];
 
   if(question.type === 'slider'){
-    const val = currentAnswerDefault(question);
+    const touched = survey.touched.has(question.id);
+    const val = touched ? survey.answers[question.id] : 50;
     holder.innerHTML = `
-      <div class="slider-row"><input type="range" min="0" max="100" value="${val}" id="rangeInput"/></div>
+      <div class="slider-row"><input type="range" min="0" max="100" value="${val}" id="rangeInput" style="${touched?'':'opacity:.45'}"/></div>
       <div class="slider-ends"><span>${question.min}</span><span>${question.max}</span></div>
+      <div class="q-eyebrow" id="sliderHint" style="margin-top:10px;">${touched ? '' : 'Move the slider to answer'}</div>
     `;
     document.getElementById('rangeInput').addEventListener('input', (e)=>{
       survey.answers[question.id] = Number(e.target.value);
+      survey.touched.add(question.id);
+      document.getElementById('sliderHint').textContent = '';
+      document.getElementById('rangeInput').style.opacity = '1';
+      refreshNextButton();
     });
-    survey.answers[question.id] = val;
   }
   else if(question.type === 'yesno'){
     ['Yes','No'].forEach(opt=>{
@@ -597,11 +789,14 @@ function renderInput(question, holder){
       };
       holder.appendChild(d);
     });
-    if(existing && /something else|somewhere else/i.test(existing)){
+    if(existing && isOtherLike(existing)){
+      const lbl = document.createElement('div');
+      lbl.className='q-eyebrow'; lbl.style.marginTop='10px'; lbl.textContent='Please specify:';
+      holder.appendChild(lbl);
       const inp = document.createElement('input');
-      inp.className='other-input'; inp.type='text'; inp.placeholder='Specify…';
+      inp.className='other-input'; inp.type='text'; inp.placeholder='Type here…';
       inp.value = survey.answers[question.id+'_other'] || '';
-      inp.oninput = (e)=>{ survey.answers[question.id+'_other']=e.target.value; };
+      inp.oninput = (e)=>{ survey.answers[question.id+'_other']=e.target.value; refreshNextButton(); };
       holder.appendChild(inp);
     }
   }
@@ -612,97 +807,152 @@ function renderInput(question, holder){
       d.className = 'choice' + (sel.has(opt) ? ' selected' : '');
       d.textContent = opt;
       d.onclick = ()=>{
-        if(sel.has(opt)) sel.delete(opt); else sel.add(opt);
+        if(question.exclusiveOption){
+          if(opt === question.exclusiveOption){
+            sel.clear(); sel.add(opt);
+          } else {
+            sel.delete(question.exclusiveOption);
+            if(sel.has(opt)) sel.delete(opt); else sel.add(opt);
+          }
+        } else {
+          if(sel.has(opt)) sel.delete(opt); else sel.add(opt);
+        }
         survey.answers[question.id] = [...sel];
         renderStep();
       };
       holder.appendChild(d);
     });
-    if([...sel].some(o=>/other|something else/i.test(o))){
+    if([...sel].some(o=>isOtherLike(o))){
+      const lbl = document.createElement('div');
+      lbl.className='q-eyebrow'; lbl.style.marginTop='10px'; lbl.textContent='Please specify:';
+      holder.appendChild(lbl);
       const inp = document.createElement('input');
-      inp.className='other-input'; inp.type='text'; inp.placeholder='Specify…';
+      inp.className='other-input'; inp.type='text'; inp.placeholder='Type here…';
       inp.value = survey.answers[question.id+'_other'] || '';
-      inp.oninput = (e)=>{ survey.answers[question.id+'_other']=e.target.value; };
+      inp.oninput = (e)=>{ survey.answers[question.id+'_other']=e.target.value; refreshNextButton(); };
       holder.appendChild(inp);
     }
   }
   else if(question.type === 'time'){
     const inp = document.createElement('input');
     inp.type='time'; inp.value = existing || '';
-    inp.oninput = (e)=>{ survey.answers[question.id]=e.target.value; };
+    inp.oninput = (e)=>{ survey.answers[question.id]=e.target.value; refreshNextButton(); };
     holder.appendChild(inp);
   }
   else if(question.type === 'text'){
     const inp = document.createElement('input');
     inp.type='text'; inp.placeholder='Type here…'; inp.value = existing || '';
-    inp.oninput = (e)=>{ survey.answers[question.id]=e.target.value; };
+    inp.oninput = (e)=>{ survey.answers[question.id]=e.target.value; refreshNextButton(); };
     holder.appendChild(inp);
   }
   else if(question.type === 'activity'){
-    Object.entries(ACTIVITIES).forEach(([cat, subs])=>{
+    // Multi-select: survey.answers[id] is an array of item objects {category,value,label,needsOther,key}
+    const selected = survey.answers[question.id] || [];
+    const selectedKeys = new Set(selected.map(i=>i.key));
+    const byCategory = {};
+    activityChoiceList().forEach(item=>{ (byCategory[item.category] ||= []).push(item); });
+
+    Object.entries(byCategory).forEach(([cat, items])=>{
       const g = document.createElement('div');
       g.className='cat-group';
       const h = document.createElement('div'); h.className='cat-header'; h.textContent = cat;
       g.appendChild(h);
-      subs.forEach(sub=>{
-        const label = sub==='Specify' ? cat : sub;
-        const val = cat+' — '+label;
+      items.forEach(item=>{
         const d = document.createElement('div');
-        d.className = 'choice' + (existing===val ? ' selected' : '');
-        d.textContent = label;
-        d.onclick = ()=>{ survey.answers[question.id]=val; renderStep(); };
+        d.className = 'choice' + (selectedKeys.has(item.key) ? ' selected' : '');
+        d.textContent = item.label;
+        d.onclick = ()=>{
+          const list = survey.answers[question.id] || [];
+          const idx = list.findIndex(i=>i.key===item.key);
+          if(idx>=0) list.splice(idx,1); else list.push(item);
+          survey.answers[question.id] = list;
+          renderStep();
+        };
         g.appendChild(d);
+        if(item.needsOther && selectedKeys.has(item.key)){
+          const lbl = document.createElement('div');
+          lbl.className='q-eyebrow'; lbl.style.margin='6px 0 8px'; lbl.textContent='Please specify:';
+          g.appendChild(lbl);
+          const inp = document.createElement('input');
+          inp.className='other-input'; inp.type='text'; inp.placeholder='Type here…';
+          inp.value = survey.answers[question.id+'_other_'+item.key] || '';
+          inp.oninput = (e)=>{ survey.answers[question.id+'_other_'+item.key]=e.target.value; refreshNextButton(); };
+          g.appendChild(inp);
+        }
       });
       holder.appendChild(g);
     });
-    if(existing && /something else|specify/i.test(existing)){
-      const inp = document.createElement('input');
-      inp.className='other-input'; inp.type='text'; inp.placeholder='Specify…';
-      inp.value = survey.answers[question.id+'_other'] || '';
-      inp.oninput = (e)=>{ survey.answers[question.id+'_other']=e.target.value; };
-      holder.appendChild(inp);
-    }
   }
 }
 
-function pushFollowups(question){
+function computeFollowups(question){
   const ans = survey.answers[question.id];
-  let toAdd = [];
-  if(question.followupYes && ans==='Yes') toAdd = question.followupYes;
-  if(question.followupNo && ans==='No') toAdd = question.followupNo;
-  if(question.followupFor && ans===question.followupFor) toAdd = question.followup;
-  if(toAdd && toAdd.length){
-    survey.dynamicQueue = [...toAdd, ...survey.dynamicQueue];
+  let list = [];
+  if(question.followupYes && ans==='Yes') list = question.followupYes;
+  else if(question.followupNo && ans==='No') list = question.followupNo;
+  else if(question.followupFor && ans===question.followupFor) list = question.followup;
+
+  if(question.expandActivities){
+    const items = ans || [];
+    // Chunk all questions for one activity together; only the order
+    // *within* each activity's chunk is randomized, plus the order of
+    // the chunks themselves — never interleaved across activities.
+    let blocks = items.map(item=>{
+      const label = activityLabel(item, survey.answers, question.id);
+      const iid = item.key;
+      return shuffled([
+        q('act_effortful_future_'+iid, 'slider', `How effortful do you think ${hi(label)} will be?`, {min:'Not at all', max:'Very much', html:true}),
+        q('act_enjoyable_future_'+iid, 'slider', `How enjoyable do you think ${hi(label)} will be?`, {min:'Not at all', max:'Very much', html:true}),
+        q('act_should_'+iid, 'slider', `How much do you feel you should do ${hi(label)}?`, {min:'Not at all', max:'Very much', html:true}),
+        q('act_whoDecided_'+iid, 'single', `Did someone tell you to do: ${hi(label)}? Or are you deciding by yourself?`, {
+          html:true,
+          choices:['Me','Someone else'],
+          followupFor:'Someone else',
+          followup: [ q('act_decidedWho_'+iid, 'single', `Who told you to do: ${hi(label)}?`, { choices: RELATIONS, html:true }) ]
+        }),
+        q('act_likely_'+iid, 'slider', `How likely are you to do ${hi(label)}?`, {min:'Not likely', max:'Very likely', html:true}),
+        q('act_othersPresent_'+iid, 'yesno', `Will other people be with you while you do: ${hi(label)}?`, {
+          html:true,
+          followupYes: [ q('act_othersWho_'+iid, 'multi', `Who will be with you while you do: ${hi(label)}?`, { choices: RELATIONS, otherLabel:'Someone else', html:true }) ]
+        }),
+      ]);
+    });
+    blocks = shuffled(blocks);
+    list = [...list, ...blocks.flat()];
+  }
+  return list;
+}
+
+/* Insert (or, on revisit with a changed answer, replace) a question's
+   follow-ups directly into the timeline right after it. Using the same
+   flat array for both display and navigation means Back always walks
+   exactly what was shown, in order — no separate queue to fall out of sync. */
+function insertFollowups(question){
+  if(question._insertedIds && question._insertedIds.length){
+    survey.timeline = survey.timeline.filter(q2 => !question._insertedIds.includes(q2.id));
+  }
+  const fresh = computeFollowups(question);
+  question._insertedIds = fresh.map(q2=>q2.id);
+  if(fresh.length){
+    const idx = survey.timeline.indexOf(question);
+    survey.timeline.splice(idx+1, 0, ...fresh);
   }
 }
 
 document.getElementById('surveyNext').onclick = ()=>{
   const question = currentQuestion();
-  if(question.type !== 'slider' && survey.answers[question.id] === undefined){
+  if(!validateStep(question)){
     toast('Please answer to continue');
     return;
   }
-  pushFollowups(question);
-  if(survey.dynamicQueue.length && survey.dynamicQueue[0] !== question){
-    // a followup was just queued (question itself removed from queue if it was dynamic)
-  }
-  if(survey.dynamicQueue.length && survey.dynamicQueue[0].id !== question.id){
-    // move on to dynamic queue item next render
-  } else if(survey.dynamicQueue.length && survey.dynamicQueue[0].id === question.id){
-    survey.dynamicQueue.shift();
-  }
-  if(survey.dynamicQueue.length){
-    renderStep();
-    return;
-  }
-  survey.index++;
-  if(survey.index >= survey.steps.length){ finishSurvey(); return; }
+  insertFollowups(question);
+  survey.pos++;
+  if(survey.pos >= survey.timeline.length){ finishSurvey(); return; }
   renderStep();
 };
 
 document.getElementById('surveyBack').onclick = ()=>{
-  if(survey.dynamicQueue.length){ /* no-op, keep simple */ }
-  if(survey.index>0){ survey.index--; renderStep(); }
+  if(survey.pos > 0){ survey.pos--; renderStep(); }
 };
 
 document.getElementById('surveyClose').onclick = ()=>{
@@ -712,11 +962,53 @@ document.getElementById('surveyClose').onclick = ()=>{
   }
 };
 
+function activityLabel(item, answers, prefix){
+  if(item.needsOther){
+    const other = answers[prefix+'_other_'+item.key];
+    if(other && other.trim()) return other.trim();
+  }
+  return item.label;
+}
+
 function finishSurvey(){
+  const beepIdx = survey.beepIndex;
+
+  // Resolve retrospective items: remove from pendingActivities if completed ('Yes'),
+  // keep if not ('No') so they're asked again at the next beep.
+  if(survey.type==='beep'){
+    (STATE.day.pendingActivities || []).forEach(item=>{
+      const ans = survey.answers['retro_did_'+item.id];
+      if(ans === 'Yes'){
+        item._resolved = true;
+      } else if(ans === 'No'){
+        item.reasonAsked = true;
+      }
+    });
+    STATE.day.pendingActivities = (STATE.day.pendingActivities || []).filter(item=>!item._resolved);
+
+    // Queue newly planned activities so the next beep asks about them —
+    // but if one is already pending (still outstanding from an earlier
+    // beep), just refresh its recency instead of adding a duplicate row.
+    const planned = survey.answers['nextActivity'];
+    if(planned && planned.length && beepIdx !== null){
+      planned.forEach(item=>{
+        const label = activityLabel(item, survey.answers, 'nextActivity');
+        const norm = label.trim().toLowerCase();
+        const dup = STATE.day.pendingActivities.find(p => p.label.trim().toLowerCase() === norm);
+        if(dup){
+          dup.addedAt = beepIdx;
+        } else {
+          STATE.day.pendingActivities.push({ id: uid(), label, addedAt: beepIdx });
+        }
+      });
+    }
+  }
+
   const entry = {
     id: uid(),
     type: survey.type,
     tag: survey.tag || survey.type,
+    participantId: STATE.settings.participantId || '',
     timestamp: new Date().toISOString(),
     date: STATE.day.date,
     ...flattenAnswers(survey.answers)
@@ -737,7 +1029,16 @@ function finishSurvey(){
 
 function flattenAnswers(ans){
   const out = {};
-  Object.entries(ans).forEach(([k,v])=>{ out[k] = Array.isArray(v) ? v.join('; ') : v; });
+  Object.entries(ans).forEach(([k,v])=>{
+    if(Array.isArray(v)){
+      out[k] = v.map(item => (item && typeof item === 'object' && item.label !== undefined)
+        ? activityLabel(item, ans, k)
+        : item
+      ).join('; ');
+    } else {
+      out[k] = v;
+    }
+  });
   return out;
 }
 
@@ -775,17 +1076,64 @@ document.getElementById('btnHistory').onclick = ()=>{
 };
 
 /* ---------------- Settings ---------------- */
-document.getElementById('btnSettings').onclick = async ()=>{
-  const ws = prompt('Wake-up time (HH:MM) — first check-in window starts here:', STATE.settings.wakeStart);
-  if(ws && /^\d{2}:\d{2}$/.test(ws)) STATE.settings.wakeStart = ws;
-  const we = prompt('Wind-down time (HH:MM) — evening check-in happens near here:', STATE.settings.wakeEnd);
-  if(we && /^\d{2}:\d{2}$/.test(we)) STATE.settings.wakeEnd = we;
+function updatePdToggle(){
+  document.getElementById('setPdYes').classList.toggle('active', STATE.settings.hasParkinsons === true);
+  document.getElementById('setPdNo').classList.toggle('active', STATE.settings.hasParkinsons === false);
+}
+function openSettings(){
+  document.getElementById('setParticipantId').value = STATE.settings.participantId || '';
+  document.getElementById('setWakeTime').value = STATE.settings.wakeStart || WAKE_START_DEFAULT;
+  document.getElementById('setBedTime').value = STATE.settings.wakeEnd || WAKE_END_DEFAULT;
+  document.getElementById('setPilotMode').checked = !!STATE.settings.pilotMode;
+  updatePdToggle();
+  document.getElementById('settingsLayer').classList.add('open');
+}
+document.getElementById('btnSettings').onclick = openSettings;
+
+document.getElementById('setPdYes').onclick = ()=>{ STATE.settings.hasParkinsons = true; updatePdToggle(); };
+document.getElementById('setPdNo').onclick = ()=>{ STATE.settings.hasParkinsons = false; updatePdToggle(); };
+
+document.getElementById('setEnableNotif').onclick = async ()=>{
+  const granted = await requestNotifPermission();
+  toast(granted ? 'Notifications enabled' : 'Notifications not enabled');
+};
+
+document.getElementById('settingsSave').onclick = ()=>{
+  const pid = document.getElementById('setParticipantId').value.trim();
+  const wake = document.getElementById('setWakeTime').value;
+  const bed = document.getElementById('setBedTime').value;
+  const pilotChecked = document.getElementById('setPilotMode').checked;
+  if(!pid){ toast('Please enter your participant ID'); return; }
+  if(STATE.settings.hasParkinsons !== true && STATE.settings.hasParkinsons !== false){ toast("Please answer the Parkinson's question"); return; }
+  if(!wake || !bed){ toast('Please set both wake and bed times'); return; }
+  if(pilotChecked && !STATE.settings.pilotMode){
+    const ok = confirm('You are on pilot mode. You wanna continue?');
+    if(!ok){ document.getElementById('setPilotMode').checked = false; return; }
+  }
+  STATE.settings.participantId = pid;
+  STATE.settings.wakeStart = wake;
+  STATE.settings.wakeEnd = bed;
+  STATE.settings.pilotMode = pilotChecked;
   saveState();
+  ensureToday();
   STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
   saveState();
-  const granted = await requestNotifPermission();
-  toast(granted ? 'Settings saved · notifications on' : 'Settings saved');
+  document.getElementById('settingsLayer').classList.remove('open');
   renderHome();
+  toast('Settings saved');
+  if('Notification' in window && Notification.permission === 'default'){
+    setTimeout(()=>{
+      if(confirm('Enable notifications for your 6 daily check-ins?')) requestNotifPermission();
+    }, 500);
+  }
+};
+
+document.getElementById('settingsClose').onclick = ()=>{
+  if(!STATE.settings.participantId){
+    toast('Please complete setup first');
+    return;
+  }
+  document.getElementById('settingsLayer').classList.remove('open');
 };
 
 /* ---------------- Toast ---------------- */
@@ -803,6 +1151,10 @@ function toast(msg){
   await initSW();
   renderHome();
   checkDueBeeps();
+  if(!STATE.settings.participantId){
+    openSettings();
+    return; // wait for onboarding to complete before offering notifications
+  }
   if('Notification' in window && Notification.permission === 'default'){
     setTimeout(()=>{
       if(confirm('Enable notifications for your 6 daily check-ins?')) requestNotifPermission();
