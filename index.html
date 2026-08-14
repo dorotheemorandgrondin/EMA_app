@@ -53,13 +53,12 @@
   .r-node{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
   .r-dot{ width:22px; height:22px; border-radius:50%; border:2.5px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; }
   .r-dot.done{ background:var(--teal); border-color:var(--teal); }
-  .r-dot.done.morning{ background:var(--dawn); border-color:var(--dawn); }
-  .r-dot.done.evening{ background:var(--dusk); border-color:var(--dusk); }
   .r-dot.due{ border-color:var(--amber); box-shadow:0 0 0 4px rgba(217,134,59,0.16); background:#fff; }
   .r-dot.missed{ background:var(--paper-2); border-color:var(--line); }
   .r-dot.missed::after{ content:'—'; color:var(--ink-soft); font-weight:700; }
   .r-dot.upcoming{ background:#fff; }
   .r-label{ font-size:9.5px; color:var(--ink-soft); white-space:nowrap; font-family:'SFMono-Regular',monospace; }
+  .r-label.wrap{ font-family:inherit; white-space:normal; max-width:56px; text-align:center; line-height:1.2; }
   .arc-caption{ text-align:center; font-size:13px; color:var(--ink-soft); margin-top:14px;}
   .arc-legend{ display:flex; justify-content:center; gap:14px; margin-top:10px; flex-wrap:wrap; }
   .arc-legend .item{ display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-soft); }
@@ -126,6 +125,9 @@
 
   input[type=text], input[type=time]{ width:100%; padding:12px 13px; border:1px solid var(--line); border-radius:10px; font-size:15px; font-family:inherit; }
 
+  .note-card{ background:#fff; border:1px solid var(--line); border-radius: var(--radius); padding:14px; }
+  .note-card textarea{ width:100%; padding:12px 13px; border:1px solid var(--line); border-radius:10px; font-size:14.5px; font-family:inherit; resize:vertical; }
+
   .cat-group{ margin-bottom:14px; }
   .cat-header{ font-weight:700; font-size:14px; margin-bottom:6px; color:var(--teal-deep); }
 
@@ -169,6 +171,12 @@
 
   <div class="section-title">Today</div>
   <div class="cards" id="todayCards"></div>
+
+  <div class="section-title">Note for the research team</div>
+  <div class="note-card">
+    <textarea id="noteText" placeholder="Any difficulty, question, or anything you'd like us to know…" rows="3"></textarea>
+    <button class="btn ghost" id="btnSaveNote" style="width:100%; margin-top:8px;">Save note</button>
+  </div>
 
   <div class="footer-actions">
     <button class="btn ghost" id="btnHistory" style="flex:1">History</button>
@@ -217,6 +225,11 @@
       <input type="time" id="setBedTime" />
       <div class="settings-hint">Your evening check-in can be done any time, but a reminder comes 15 minutes before this. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
     </div>
+    <div class="settings-field">
+      <label>Researcher email (optional)</label>
+      <input type="email" id="setResearcherEmail" placeholder="researcher@university.edu" />
+      <div class="settings-hint">Used to pre-address the export email, if you use that option.</div>
+    </div>
     <button class="btn ghost" id="setEnableNotif" style="width:100%; margin-top:8px;">Enable notifications</button>
     <div class="pilot-row">
       <input type="checkbox" id="setPilotMode" />
@@ -260,7 +273,7 @@ function loadState(){
   let state = raw ? JSON.parse(raw) : null;
   if(!state){
     state = {
-      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false, participantId:'', hasParkinsons:null, pilotMode:false },
+      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false, participantId:'', hasParkinsons:null, pilotMode:false, researcherEmail:'' },
       schedule: { date: null, times: [] },
       entries: [],
       day: { date: null, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] }
@@ -270,6 +283,7 @@ function loadState(){
   if(state.settings.participantId === undefined) state.settings.participantId = '';
   if(state.settings.hasParkinsons === undefined) state.settings.hasParkinsons = null;
   if(state.settings.pilotMode === undefined) state.settings.pilotMode = false;
+  if(state.settings.researcherEmail === undefined) state.settings.researcherEmail = '';
   return state;
 }
 let STATE = loadState();
@@ -397,13 +411,13 @@ function renderArc(){
   const wrap = document.getElementById('arcWrap');
   const nodes = [];
 
-  nodes.push({ kind:'morning', label: STATE.settings.wakeStart, done: STATE.day.morningDone, status: STATE.day.morningDone ? 'done' : 'available' });
+  nodes.push({ kind:'morning', label: 'Morning questionnaire', wide:true, done: STATE.day.morningDone, status: STATE.day.morningDone ? 'done' : 'available' });
   STATE.schedule.times.forEach((t, idx)=>{
     const done = STATE.day.beepsDone.includes(idx);
     const status = done ? 'done' : beepStatus(idx);
     nodes.push({ kind:'beep', label:t, done, status });
   });
-  nodes.push({ kind:'evening', label: STATE.settings.wakeEnd, done: STATE.day.eveningDone, status: STATE.day.eveningDone ? 'done' : 'available' });
+  nodes.push({ kind:'evening', label: 'Evening questionnaire', wide:true, done: STATE.day.eveningDone, status: STATE.day.eveningDone ? 'done' : 'available' });
 
   wrap.innerHTML = `
     <div class="rhythm-track">
@@ -414,7 +428,9 @@ function renderArc(){
         else if(n.status==='missed') cls.push('missed');
         else cls.push('upcoming');
         const glyph = n.done ? '✓' : '';
-        return `<div class="r-node"><div class="${cls.join(' ')}">${glyph}</div><div class="r-label">${n.label}</div></div>`;
+        const nodeStyle = n.wide ? ' style="flex:1.7"' : '';
+        const labelCls = 'r-label' + (n.wide ? ' wrap' : '');
+        return `<div class="r-node"${nodeStyle}><div class="${cls.join(' ')}">${glyph}</div><div class="${labelCls}">${escHtml(n.label)}</div></div>`;
       }).join('')}
     </div>
   `;
@@ -491,26 +507,75 @@ function shuffled(arr){
 }
 
 const ACTIVITIES = {
-  'Social activity': ['Chatting/meeting with someone','Talking on the phone','Going to a restaurant/cafe/bar','Playing games','Something else'],
-  'Household chore': ['Cleaning','Doing laundry','Cooking','Buying groceries','Something else'],
-  'Working': ['Working for my job','Working on a personal project','Voluntary work','Something else'],
-  'Resting': ['Doing nothing particular','Daydreaming','Watching TV','Laying down','Napping/trying to nap','Something else'],
-  'Sport': ['Walking','Biking','Dancing','Playing tennis','Boxing','Something else'],
-  'Hobby': ['Listening to music','Painting','Reading','Making music','Doing arts and crafts','Something else'],
-  'Self-care': ['Showering/washing','Eating','Getting dressed','Something else'],
-  'Another activity': ['Specify']
+  'Social activity': [
+    {label:'Chatting/meeting with someone', verb:'chat or meet with someone'},
+    {label:'Talking on the phone', verb:'talk on the phone'},
+    {label:'Going to a restaurant/cafe/bar', verb:'go to a restaurant, cafe or bar'},
+    {label:'Playing games', verb:'play games'},
+    {label:'Something else', needsOther:true},
+  ],
+  'Household chore': [
+    {label:'Cleaning', verb:'clean'},
+    {label:'Doing laundry', verb:'do laundry'},
+    {label:'Cooking', verb:'cook'},
+    {label:'Buying groceries', verb:'buy groceries'},
+    {label:'Something else', needsOther:true},
+  ],
+  'Working': [
+    {label:'Working for my job', verb:'work for my job'},
+    {label:'Working on a personal project', verb:'work on a personal project'},
+    {label:'Voluntary work', verb:'do voluntary work'},
+    {label:'Something else', needsOther:true},
+  ],
+  'Resting': [
+    {label:'Doing nothing particular', verb:'do nothing particular'},
+    {label:'Daydreaming', verb:'daydream'},
+    {label:'Watching TV', verb:'watch TV'},
+    {label:'Laying down', verb:'lay down'},
+    {label:'Napping/trying to nap', verb:'nap'},
+    {label:'Something else', needsOther:true},
+  ],
+  'Sport': [
+    {label:'Walking', verb:'walk'},
+    {label:'Biking', verb:'bike'},
+    {label:'Dancing', verb:'dance'},
+    {label:'Playing tennis', verb:'play tennis'},
+    {label:'Boxing', verb:'box'},
+    {label:'Something else', needsOther:true},
+  ],
+  'Hobby': [
+    {label:'Listening to music', verb:'listen to music'},
+    {label:'Painting', verb:'paint'},
+    {label:'Reading', verb:'read'},
+    {label:'Making music', verb:'make music'},
+    {label:'Doing arts and crafts', verb:'do arts and crafts'},
+    {label:'Something else', needsOther:true},
+  ],
+  'Self-care': [
+    {label:'Showering/washing', verb:'shower or wash'},
+    {label:'Eating', verb:'eat'},
+    {label:'Getting dressed', verb:'get dressed'},
+    {label:'Something else', needsOther:true},
+  ],
+  'Another activity': [
+    {label:'Another activity', needsOther:true},
+  ],
 };
 function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40); }
 function isOtherLike(val){ return /something else|somewhere else|someone else|another activity/i.test(val || ''); }
+/* A question can exempt specific answers (e.g. 'Someone else') from
+   triggering a specify field, when a later question already asks for detail. */
+function needsOtherPrompt(question, val){
+  if(!isOtherLike(val)) return false;
+  if(question.otherExempt && question.otherExempt.includes(val)) return false;
+  return true;
+}
 function activityChoiceList(){
   const list = [];
   Object.entries(ACTIVITIES).forEach(([cat, subs])=>{
     subs.forEach(sub=>{
-      const isSpecify = sub === 'Specify';
-      const label = isSpecify ? cat : sub;
-      const value = cat + ' — ' + label;
-      const needsOther = isSpecify || /something else/i.test(sub);
-      list.push({ category: cat, value, label, needsOther, key: slug(value) });
+      const value = cat + ' — ' + sub.label;
+      list.push({ category: cat, value, label: sub.label, verb: sub.verb || null, needsOther: !!sub.needsOther, key: slug(value) });
     });
   });
   return list;
@@ -576,13 +641,14 @@ function buildBeepSurvey(beepIndex){
   if(!isFirst){
     const pending = (STATE.day.pendingActivities || []).slice().sort((a,b)=> b.addedAt - a.addedAt);
     pending.forEach(item=>{
+      const verbPhrase = item.verb || item.label;
       retro.push(q('retro_did_'+item.id, 'yesno', `Did you do: ${hi(item.label)}?`, {
         html: true,
         pendingId: item.id,
         followupYes: [
-          q('retro_effort_'+item.id, 'slider', 'How effortful was it?', {min:'Not at all', max:'Very much'}),
-          q('retro_enjoy_'+item.id, 'slider', 'How enjoyable was it?', {min:'Not at all', max:'Very much'}),
-          q('retro_should_'+item.id, 'slider', 'How much did you feel you had to do it?', {min:'Not at all', max:'Very much'}),
+          q('retro_effort_'+item.id, 'slider', `How effortful was ${hi(item.label)}?`, {min:'Not at all', max:'Very much', html:true}),
+          q('retro_enjoy_'+item.id, 'slider', `How enjoyable was ${hi(item.label)}?`, {min:'Not at all', max:'Very much', html:true}),
+          q('retro_should_'+item.id, 'slider', `How much did you feel you had to ${hi(verbPhrase)}?`, {min:'Not at all', max:'Very much', html:true}),
         ],
         // Only ask the reason the first time it's marked not-done; later beeps
         // just re-ask yes/no without repeating the reason question.
@@ -591,25 +657,23 @@ function buildBeepSurvey(beepIndex){
         ],
       }));
     });
-    // Catch-all for anything unplanned they also did
+    // Catch-all for anything unplanned they also did — asks the same
+    // effort/enjoyment/obligation cluster per selected activity.
     retro.push(q('anythingElse','yesno','Did you do anything else during the last 2 hours that we haven\u2019t asked about?', {
       followupYes: [
-        q('elseActivity','activity','What did you do?', { hint:'Select as many as apply.' }),
-        q('else_effort','slider','How effortful was it?', {min:'Not at all', max:'Very much'}),
-        q('else_enjoy','slider','How rewarding was it?', {min:'Not at all', max:'Very much'}),
-        q('else_obligatory','slider','How obligatory did it feel?', {min:'Not at all', max:'Very much'}),
+        q('elseActivity','activity','What did you do?', { hint:'Select as many as apply.', expandMode:'retroExtra' }),
       ]
     }));
   }
 
   // --- Prospective: what will you do in the next 2 hours (multi-select).
   // Follow-up questions are generated per selected activity once this
-  // question is answered (see pushFollowups/expandActivities). ---
+  // question is answered (see computeFollowups/expandMode). ---
   let prospective = [];
   if(!isLast){
     prospective.push(q('nextActivity','activity','What will you do in the next 2 hours?', {
       hint:'Select as many as you plan to do.',
-      expandActivities: true,
+      expandMode: 'prospective',
     }));
   }
 
@@ -632,8 +696,7 @@ function buildEveningSurvey(){
     }),
     q('wantedToDo','yesno',"Is there something that you didn't do, but that you wanted to do?", {
       followupYes: [
-        q('wantedWhat','single','What was it that you wanted to do?', { choices:['A social activity','Work','A sport','A leisure activity','Something else'] }),
-        q('wantedBlocker','single','What do you think stood in your way?', { choices: NOT_DONE_REASONS }),
+        q('wantedWhat','activity','What was it that you wanted to do?', { hint:'Select as many as apply.', expandMode:'blocker' }),
       ]
     }),
   ]);
@@ -714,7 +777,7 @@ function validateStep(question){
   if(question.type === 'time' || question.type === 'text') return !!(ans && String(ans).trim());
   if(question.type === 'single'){
     if(ans === undefined) return false;
-    if(isOtherLike(ans)){
+    if(needsOtherPrompt(question, ans)){
       const other = survey.answers[question.id+'_other'];
       return !!(other && other.trim());
     }
@@ -789,7 +852,7 @@ function renderInput(question, holder){
       };
       holder.appendChild(d);
     });
-    if(existing && isOtherLike(existing)){
+    if(existing && needsOtherPrompt(question, existing)){
       const lbl = document.createElement('div');
       lbl.className='q-eyebrow'; lbl.style.marginTop='10px'; lbl.textContent='Please specify:';
       holder.appendChild(lbl);
@@ -885,6 +948,36 @@ function renderInput(question, holder){
   }
 }
 
+function prospectiveActivityBlock(label, verb, iid){
+  return shuffled([
+    q('act_effortful_future_'+iid, 'slider', `How effortful do you think ${hi(label)} will be?`, {min:'Not at all', max:'Very much', html:true}),
+    q('act_enjoyable_future_'+iid, 'slider', `How enjoyable do you think ${hi(label)} will be?`, {min:'Not at all', max:'Very much', html:true}),
+    q('act_should_'+iid, 'slider', `How much do you feel you should ${hi(verb)}?`, {min:'Not at all', max:'Very much', html:true}),
+    q('act_whoDecided_'+iid, 'single', `Did someone tell you to ${hi(verb)}? Or are you deciding by yourself?`, {
+      html:true,
+      choices:['Me','Someone else'],
+      otherExempt:['Someone else'], // the follow-up question already asks who
+      followupFor:'Someone else',
+      followup: [ q('act_decidedWho_'+iid, 'single', `Who told you to ${hi(verb)}?`, { choices: RELATIONS, html:true }) ]
+    }),
+    q('act_likely_'+iid, 'slider', `How likely are you to ${hi(verb)}?`, {min:'Not likely', max:'Very likely', html:true}),
+    q('act_othersPresent_'+iid, 'yesno', `Will other people be with you while you ${hi(verb)}?`, {
+      html:true,
+      followupYes: [ q('act_othersWho_'+iid, 'multi', `Who will be with you while you ${hi(verb)}?`, { choices: RELATIONS, otherLabel:'Someone else', html:true }) ]
+    }),
+  ]);
+}
+function retroExtraActivityBlock(label, verb, iid){
+  return shuffled([
+    q('else_effort_'+iid, 'slider', `How effortful was ${hi(label)}?`, {min:'Not at all', max:'Very much', html:true}),
+    q('else_enjoy_'+iid, 'slider', `How enjoyable was ${hi(label)}?`, {min:'Not at all', max:'Very much', html:true}),
+    q('else_should_'+iid, 'slider', `How much did you feel you had to ${hi(verb)}?`, {min:'Not at all', max:'Very much', html:true}),
+  ]);
+}
+function blockerActivityBlock(label, iid){
+  return [ q('wanted_blocker_'+iid, 'single', `What do you think stood in your way of ${hi(label)}?`, { choices: NOT_DONE_REASONS, html:true }) ];
+}
+
 function computeFollowups(question){
   const ans = survey.answers[question.id];
   let list = [];
@@ -892,30 +985,19 @@ function computeFollowups(question){
   else if(question.followupNo && ans==='No') list = question.followupNo;
   else if(question.followupFor && ans===question.followupFor) list = question.followup;
 
-  if(question.expandActivities){
+  if(question.expandMode){
     const items = ans || [];
     // Chunk all questions for one activity together; only the order
     // *within* each activity's chunk is randomized, plus the order of
     // the chunks themselves — never interleaved across activities.
     let blocks = items.map(item=>{
       const label = activityLabel(item, survey.answers, question.id);
+      const verb = activityVerb(item, survey.answers, question.id);
       const iid = item.key;
-      return shuffled([
-        q('act_effortful_future_'+iid, 'slider', `How effortful do you think ${hi(label)} will be?`, {min:'Not at all', max:'Very much', html:true}),
-        q('act_enjoyable_future_'+iid, 'slider', `How enjoyable do you think ${hi(label)} will be?`, {min:'Not at all', max:'Very much', html:true}),
-        q('act_should_'+iid, 'slider', `How much do you feel you should do ${hi(label)}?`, {min:'Not at all', max:'Very much', html:true}),
-        q('act_whoDecided_'+iid, 'single', `Did someone tell you to do: ${hi(label)}? Or are you deciding by yourself?`, {
-          html:true,
-          choices:['Me','Someone else'],
-          followupFor:'Someone else',
-          followup: [ q('act_decidedWho_'+iid, 'single', `Who told you to do: ${hi(label)}?`, { choices: RELATIONS, html:true }) ]
-        }),
-        q('act_likely_'+iid, 'slider', `How likely are you to do ${hi(label)}?`, {min:'Not likely', max:'Very likely', html:true}),
-        q('act_othersPresent_'+iid, 'yesno', `Will other people be with you while you do: ${hi(label)}?`, {
-          html:true,
-          followupYes: [ q('act_othersWho_'+iid, 'multi', `Who will be with you while you do: ${hi(label)}?`, { choices: RELATIONS, otherLabel:'Someone else', html:true }) ]
-        }),
-      ]);
+      if(question.expandMode === 'prospective') return prospectiveActivityBlock(label, verb, iid);
+      if(question.expandMode === 'retroExtra') return retroExtraActivityBlock(label, verb, iid);
+      if(question.expandMode === 'blocker') return blockerActivityBlock(label, iid);
+      return [];
     });
     blocks = shuffled(blocks);
     list = [...list, ...blocks.flat()];
@@ -969,6 +1051,16 @@ function activityLabel(item, answers, prefix){
   }
   return item.label;
 }
+/* Base-verb-form phrase for sentences like "should X" / "likely to X" —
+   falls back to the typed text (or the noun label) when there's no
+   catalog verb form to use, e.g. free-typed 'other' activities. */
+function activityVerb(item, answers, prefix){
+  if(item.needsOther){
+    const other = answers[prefix+'_other_'+item.key];
+    if(other && other.trim()) return other.trim();
+  }
+  return item.verb || item.label;
+}
 
 function finishSurvey(){
   const beepIdx = survey.beepIndex;
@@ -993,12 +1085,14 @@ function finishSurvey(){
     if(planned && planned.length && beepIdx !== null){
       planned.forEach(item=>{
         const label = activityLabel(item, survey.answers, 'nextActivity');
+        const verb = activityVerb(item, survey.answers, 'nextActivity');
         const norm = label.trim().toLowerCase();
         const dup = STATE.day.pendingActivities.find(p => p.label.trim().toLowerCase() === norm);
         if(dup){
           dup.addedAt = beepIdx;
+          dup.verb = verb;
         } else {
-          STATE.day.pendingActivities.push({ id: uid(), label, addedAt: beepIdx });
+          STATE.day.pendingActivities.push({ id: uid(), label, verb, addedAt: beepIdx });
         }
       });
     }
@@ -1056,15 +1150,38 @@ function toCSV(rows){
   rows.forEach(r=> lines.push(cols.map(c=>esc(r[c])).join(',')));
   return lines.join('\n');
 }
-function exportCSV(){
+async function exportCSV(){
   const csv = toCSV(STATE.entries);
   if(!csv){ toast('No entries yet'); return; }
+  const filename = `ema-export-${STATE.settings.participantId || 'participant'}-${todayStr()}.csv`;
   const blob = new Blob([csv], {type:'text/csv'});
+  const file = new File([blob], filename, {type:'text/csv'});
+
+  if(navigator.canShare && navigator.canShare({ files:[file] })){
+    try{
+      await navigator.share({ files:[file], title:'EMA data export', text:`EMA export — participant ${STATE.settings.participantId || ''}` });
+      return;
+    }catch(e){
+      // user cancelled the share sheet, or it failed — fall through to download
+      if(e && e.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback: download the file, then open a pre-addressed email draft.
+  // Browsers can't attach files via mailto:, so the draft asks the person
+  // to attach the file that was just downloaded.
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `ema-export-${todayStr()}.csv`;
+  a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
+
+  const to = STATE.settings.researcherEmail || '';
+  const subject = encodeURIComponent(`EMA export — participant ${STATE.settings.participantId || ''}`);
+  const body = encodeURIComponent(`The file "${filename}" was just downloaded to this phone — please attach it to this email before sending.`);
+  setTimeout(()=>{
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+  }, 400);
 }
 document.getElementById('btnExport').onclick = exportCSV;
 
@@ -1073,6 +1190,25 @@ document.getElementById('btnHistory').onclick = ()=>{
   const n = STATE.entries.length;
   const days = new Set(STATE.entries.map(e=>e.date)).size;
   alert(n === 0 ? 'No entries yet.' : `${n} entries recorded across ${days} day(s).\nUse "Export CSV" to see full detail.`);
+};
+
+/* ---------------- Notes to the research team ---------------- */
+document.getElementById('btnSaveNote').onclick = ()=>{
+  const el = document.getElementById('noteText');
+  const text = el.value.trim();
+  if(!text){ toast('Write a note first'); return; }
+  STATE.entries.push({
+    id: uid(),
+    type: 'note',
+    tag: 'note',
+    participantId: STATE.settings.participantId || '',
+    timestamp: new Date().toISOString(),
+    date: todayStr(),
+    noteText: text,
+  });
+  saveState();
+  el.value = '';
+  toast('Note saved — thank you');
 };
 
 /* ---------------- Settings ---------------- */
@@ -1085,6 +1221,7 @@ function openSettings(){
   document.getElementById('setWakeTime').value = STATE.settings.wakeStart || WAKE_START_DEFAULT;
   document.getElementById('setBedTime').value = STATE.settings.wakeEnd || WAKE_END_DEFAULT;
   document.getElementById('setPilotMode').checked = !!STATE.settings.pilotMode;
+  document.getElementById('setResearcherEmail').value = STATE.settings.researcherEmail || '';
   updatePdToggle();
   document.getElementById('settingsLayer').classList.add('open');
 }
@@ -1114,6 +1251,7 @@ document.getElementById('settingsSave').onclick = ()=>{
   STATE.settings.wakeStart = wake;
   STATE.settings.wakeEnd = bed;
   STATE.settings.pilotMode = pilotChecked;
+  STATE.settings.researcherEmail = document.getElementById('setResearcherEmail').value.trim();
   saveState();
   ensureToday();
   STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
