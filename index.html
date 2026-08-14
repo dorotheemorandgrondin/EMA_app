@@ -239,11 +239,19 @@
       <div class="settings-hint">Your evening check-in can be done any time, but a reminder comes 15 minutes before this. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
     </div>
     <div class="settings-field">
+      <label>Reliable notifications (recommended)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="setNtfyTopic" style="flex:1;" />
+        <button class="btn ghost small" id="btnCopyTopic" type="button">Copy</button>
+      </div>
+      <div class="settings-hint">1) Install the free <b>ntfy</b> app from the Play Store. 2) Open it, tap "+", and subscribe to the exact topic name above. This delivers your reminders through ntfy's own app, reliably, even if this app or Chrome is fully closed.</div>
+    </div>
+    <div class="settings-field">
       <label>Researcher email (optional)</label>
       <input type="email" id="setResearcherEmail" placeholder="researcher@university.edu" />
       <div class="settings-hint">Used to pre-address the export email, if you use that option.</div>
     </div>
-    <button class="btn ghost" id="setEnableNotif" style="width:100%; margin-top:8px;">Enable notifications</button>
+    <button class="btn ghost" id="setEnableNotif" style="width:100%; margin-top:8px;">Also enable in-app notifications</button>
     <div class="pilot-row">
       <input type="checkbox" id="setPilotMode" />
       <label for="setPilotMode">Pilot / test mode</label>
@@ -282,15 +290,17 @@ function uid(){ return Date.now().toString(36) + Math.random().toString(36).slic
 function nowMinutes(){ const d = new Date(); return d.getHours()*60 + d.getMinutes(); }
 function minToHHMM(m){ m = ((m%1440)+1440)%1440; return pad(Math.floor(m/60)) + ':' + pad(Math.floor(m%60)); }
 
+function randTopicSuffix(){ return Math.random().toString(36).slice(2,8) + Math.random().toString(36).slice(2,6); }
+
 function loadState(){
   let raw = localStorage.getItem(STORE_KEY);
   let state = raw ? JSON.parse(raw) : null;
   if(!state){
     state = {
-      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false, participantId:'', hasParkinsons:null, pilotMode:false, researcherEmail: RESEARCHER_EMAIL_DEFAULT },
+      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false, participantId:'', hasParkinsons:null, pilotMode:false, researcherEmail: RESEARCHER_EMAIL_DEFAULT, ntfyTopic: 'dailyrhythm-'+randTopicSuffix() },
       schedule: { date: null, times: [] },
       entries: [],
-      day: { date: null, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] }
+      day: { date: null, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [], ntfyScheduledFor: null }
     };
   }
   if(!state.day.pendingActivities) state.day.pendingActivities = [];
@@ -298,6 +308,8 @@ function loadState(){
   if(state.settings.hasParkinsons === undefined) state.settings.hasParkinsons = null;
   if(state.settings.pilotMode === undefined) state.settings.pilotMode = false;
   if(!state.settings.researcherEmail) state.settings.researcherEmail = RESEARCHER_EMAIL_DEFAULT;
+  if(!state.settings.ntfyTopic) state.settings.ntfyTopic = 'dailyrhythm-'+randTopicSuffix();
+  if(state.day.ntfyScheduledFor === undefined) state.day.ntfyScheduledFor = null;
   return state;
 }
 let STATE = loadState();
@@ -306,12 +318,13 @@ function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
 function ensureToday(){
   const t = todayStr();
   if(STATE.day.date !== t){
-    STATE.day = { date: t, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] };
+    STATE.day = { date: t, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [], ntfyScheduledFor: null };
   }
   if(STATE.schedule.date !== t){
     STATE.schedule = { date: t, times: generateBeepTimes() };
   }
   saveState();
+  scheduleNtfyToday();
 }
 
 function generateBeepTimes(){
@@ -417,6 +430,55 @@ function checkDueBeeps(){
     markNotified('evening-'+STATE.day.date);
   }
   renderHome();
+}
+
+/* ---------------- ntfy relay (reliable notifications via a native app) ----------------
+   ntfy.sh lets a message be scheduled for future delivery (the 'Delay' header),
+   and its own installed Android app delivers it via a real background service —
+   independent of whether this web app or Chrome is open. We push today's whole
+   schedule once, as soon as the day's beep times are known. */
+async function scheduleNtfyToday(){
+  if(!STATE.settings.ntfyTopic) return;
+  if(STATE.day.ntfyScheduledFor === STATE.day.date) return; // already pushed today
+  if(!navigator.onLine) return; // try again next time ensureToday() runs
+
+  const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
+  const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
+  const points = [
+    { mins: sh*60+sm+MORNING_NOTIF_OFFSET, title:'Good morning ☀️', body:'Your morning check-in is ready.', tag:'morning' },
+    ...STATE.schedule.times.map((t,idx)=>{
+      const w = beepWindowMinutes(idx);
+      return { mins: w.start, title:'It\u2019s time for some questions', body:'You have 30 minutes to answer.', tag:'beep-'+idx };
+    }),
+    { mins: eh*60+em-EVENING_NOTIF_OFFSET, title:'Evening check-in 🌙', body:'A few questions to round off the day.', tag:'evening' },
+  ];
+
+  const midnight = new Date(); midnight.setHours(0,0,0,0);
+  const now = Date.now();
+  const topic = STATE.settings.ntfyTopic;
+  const baseUrl = location.origin + location.pathname;
+  let allSent = true;
+  for(const p of points){
+    const deliverAt = midnight.getTime() + p.mins*60000;
+    if(deliverAt <= now + 60000) continue; // skip anything already past
+    try{
+      await fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
+        method: 'POST',
+        headers: {
+          'Title': p.title,
+          'Delay': String(Math.floor(deliverAt/1000)),
+          'Click': baseUrl + '?open=' + encodeURIComponent(p.tag),
+        },
+        body: p.body,
+      });
+    }catch(e){
+      allSent = false; // network hiccup — try again on the next check
+    }
+  }
+  if(allSent){
+    STATE.day.ntfyScheduledFor = STATE.day.date;
+    saveState();
+  }
 }
 
 /* ---------------- Day arc (signature visual) ---------------- */
@@ -1244,10 +1306,17 @@ function openSettings(){
   document.getElementById('setBedTime').value = STATE.settings.wakeEnd || WAKE_END_DEFAULT;
   document.getElementById('setPilotMode').checked = !!STATE.settings.pilotMode;
   document.getElementById('setResearcherEmail').value = STATE.settings.researcherEmail || '';
+  document.getElementById('setNtfyTopic').value = STATE.settings.ntfyTopic || '';
   updatePdToggle();
   document.getElementById('settingsLayer').classList.add('open');
 }
 document.getElementById('btnSettings').onclick = openSettings;
+
+document.getElementById('btnCopyTopic').onclick = async ()=>{
+  const val = document.getElementById('setNtfyTopic').value;
+  try{ await navigator.clipboard.writeText(val); toast('Copied'); }
+  catch(e){ toast('Copy failed — select and copy manually'); }
+};
 
 document.getElementById('setPdYes').onclick = ()=>{ STATE.settings.hasParkinsons = true; updatePdToggle(); };
 document.getElementById('setPdNo').onclick = ()=>{ STATE.settings.hasParkinsons = false; updatePdToggle(); };
@@ -1262,6 +1331,7 @@ document.getElementById('settingsSave').onclick = ()=>{
   const wake = document.getElementById('setWakeTime').value;
   const bed = document.getElementById('setBedTime').value;
   const pilotChecked = document.getElementById('setPilotMode').checked;
+  const ntfyTopic = document.getElementById('setNtfyTopic').value.trim();
   if(!pid){ toast('Please enter your participant ID'); return; }
   if(STATE.settings.hasParkinsons !== true && STATE.settings.hasParkinsons !== false){ toast("Please answer the Parkinson's question"); return; }
   if(!wake || !bed){ toast('Please set both wake and bed times'); return; }
@@ -1269,15 +1339,20 @@ document.getElementById('settingsSave').onclick = ()=>{
     const ok = confirm('You are on pilot mode. You wanna continue?');
     if(!ok){ document.getElementById('setPilotMode').checked = false; return; }
   }
+  const wakeOrBedChanged = (wake !== STATE.settings.wakeStart) || (bed !== STATE.settings.wakeEnd);
+  const topicChanged = ntfyTopic !== STATE.settings.ntfyTopic;
   STATE.settings.participantId = pid;
   STATE.settings.wakeStart = wake;
   STATE.settings.wakeEnd = bed;
   STATE.settings.pilotMode = pilotChecked;
   STATE.settings.researcherEmail = document.getElementById('setResearcherEmail').value.trim();
+  STATE.settings.ntfyTopic = ntfyTopic || STATE.settings.ntfyTopic;
   saveState();
   ensureToday();
   STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
+  if(wakeOrBedChanged || topicChanged) STATE.day.ntfyScheduledFor = null; // re-push with new times/topic
   saveState();
+  scheduleNtfyToday();
   document.getElementById('settingsLayer').classList.remove('open');
   renderHome();
   toast('Settings saved');
@@ -1311,9 +1386,20 @@ function toast(msg){
   await initSW();
   renderHome();
   checkDueBeeps();
+
+  const urlParams = new URLSearchParams(location.search);
+  const openTag = urlParams.get('open');
+  if(openTag){
+    history.replaceState({}, '', location.pathname); // strip ?open= so a later refresh doesn't reopen it
+  }
+
   if(!STATE.settings.participantId){
     openSettings();
     return; // wait for onboarding to complete before offering notifications
+  }
+  if(openTag){
+    openSurveyByTag(openTag);
+    return;
   }
   if('Notification' in window && Notification.permission === 'default'){
     setTimeout(()=>{

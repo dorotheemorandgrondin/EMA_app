@@ -52,13 +52,14 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const tag = event.notification.tag || '';
   event.waitUntil(
     self.clients.matchAll({ type: 'window' }).then((clientsArr) => {
       if (clientsArr.length > 0) {
         clientsArr[0].focus();
-        clientsArr[0].postMessage({ type: 'OPEN_SURVEY', tag: event.notification.tag });
+        clientsArr[0].postMessage({ type: 'OPEN_SURVEY', tag });
       } else {
-        self.clients.openWindow('./index.html');
+        self.clients.openWindow('./index.html?open=' + encodeURIComponent(tag));
       }
     })
   );
