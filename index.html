@@ -404,30 +404,34 @@ function openSurveyByTag(tag){
   else if(tag && tag.startsWith('beep-')) startSurvey('beep', tag);
 }
 
-let notifiedTags = new Set(JSON.parse(sessionStorage.getItem('notifiedTags')||'[]'));
-function markNotified(tag){ notifiedTags.add(tag); sessionStorage.setItem('notifiedTags', JSON.stringify([...notifiedTags])); }
+let notifiedTags = new Set(JSON.parse(localStorage.getItem('notifiedTags')||'[]'));
+function markNotified(tag){ notifiedTags.add(tag); localStorage.setItem('notifiedTags', JSON.stringify([...notifiedTags])); }
 
 function checkDueBeeps(){
   ensureToday();
-  const nowMin = nowMinutes();
-  // morning: reminder 15 min after wake time, if not already done
-  const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
-  if(!STATE.day.morningDone && nowMin >= (sh*60+sm+MORNING_NOTIF_OFFSET) && !notifiedTags.has('morning-'+STATE.day.date)){
-    fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
-    markNotified('morning-'+STATE.day.date);
-  }
-  STATE.schedule.times.forEach((t, idx)=>{
-    const w = beepWindowMinutes(idx);
-    const tag = 'beep-'+idx+'-'+STATE.day.date;
-    if(nowMin >= w.start && !STATE.day.beepsDone.includes(idx) && !notifiedTags.has(tag)){
-      fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
-      markNotified(tag);
+  // ntfy is the single source of truth for notifications when configured
+  // (the default) — this avoids firing the same reminder twice from two
+  // systems, and avoids a burst of 'catch-up' notifications for anything
+  // already past by the time the app is reopened.
+  if(!STATE.settings.ntfyTopic){
+    const nowMin = nowMinutes();
+    const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
+    if(!STATE.day.morningDone && nowMin >= (sh*60+sm+MORNING_NOTIF_OFFSET) && nowMin < (sh*60+sm+MORNING_NOTIF_OFFSET+30) && !notifiedTags.has('morning-'+STATE.day.date)){
+      fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
+      markNotified('morning-'+STATE.day.date);
     }
-  });
-  const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
-  if(!STATE.day.eveningDone && nowMin >= (eh*60+em-EVENING_NOTIF_OFFSET) && !notifiedTags.has('evening-'+STATE.day.date)){
-    fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
-    markNotified('evening-'+STATE.day.date);
+    STATE.schedule.times.forEach((t, idx)=>{
+      const tag = 'beep-'+idx+'-'+STATE.day.date;
+      if(beepStatus(idx) === 'available' && !notifiedTags.has(tag)){
+        fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
+        markNotified(tag);
+      }
+    });
+    const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
+    if(!STATE.day.eveningDone && nowMin >= (eh*60+em-EVENING_NOTIF_OFFSET) && nowMin < (eh*60+em) && !notifiedTags.has('evening-'+STATE.day.date)){
+      fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
+      markNotified('evening-'+STATE.day.date);
+    }
   }
   renderHome();
 }
