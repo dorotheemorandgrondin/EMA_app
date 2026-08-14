@@ -109,6 +109,19 @@
   .q-eyebrow{ font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;}
   .q-text{ font-size:19px; line-height:1.35; font-family:Georgia,serif; margin-bottom:22px; }
   .act-hl{ background:#F3D9B1; color:var(--teal-deep); padding:1px 7px; border-radius:7px; font-weight:600; }
+  .activity-banner{
+    background:#FFE066;
+    color:#3A2E00;
+    font-family:Georgia,serif;
+    font-weight:800;
+    font-size:26px;
+    line-height:1.25;
+    padding:16px 18px;
+    border-radius:14px;
+    text-align:center;
+    margin-bottom:18px;
+  }
+  .q-text.secondary{ font-family:'Inter',sans-serif; font-size:17px; font-weight:500; color:var(--ink-soft); margin-bottom:20px; }
   .survey-foot{ position:fixed; bottom:0; left:0; right:0; padding:14px 20px 22px; background:linear-gradient(180deg, transparent, var(--paper) 30%); display:flex; justify-content:space-between; gap:10px;}
   .survey-foot .btn{ flex:1; padding:13px; font-size:15px; }
 
@@ -253,6 +266,7 @@
 const STORE_KEY = 'ema_state_v1';
 const WAKE_START_DEFAULT = '08:00';
 const WAKE_END_DEFAULT = '22:00';
+const RESEARCHER_EMAIL_DEFAULT = 'dorotheemgrondin1@gmail.com';
 const BEEPS_PER_DAY = 6;
 const MIN_GAP_MIN = 100; // minimum minutes between beeps (targets ~2h apart)
 const BEEP_WINDOW_MIN = 30; // how long each beep stays open before it's missed
@@ -273,7 +287,7 @@ function loadState(){
   let state = raw ? JSON.parse(raw) : null;
   if(!state){
     state = {
-      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false, participantId:'', hasParkinsons:null, pilotMode:false, researcherEmail:'' },
+      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false, participantId:'', hasParkinsons:null, pilotMode:false, researcherEmail: RESEARCHER_EMAIL_DEFAULT },
       schedule: { date: null, times: [] },
       entries: [],
       day: { date: null, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] }
@@ -283,7 +297,7 @@ function loadState(){
   if(state.settings.participantId === undefined) state.settings.participantId = '';
   if(state.settings.hasParkinsons === undefined) state.settings.hasParkinsons = null;
   if(state.settings.pilotMode === undefined) state.settings.pilotMode = false;
-  if(state.settings.researcherEmail === undefined) state.settings.researcherEmail = '';
+  if(!state.settings.researcherEmail) state.settings.researcherEmail = RESEARCHER_EMAIL_DEFAULT;
   return state;
 }
 let STATE = loadState();
@@ -641,19 +655,18 @@ function buildBeepSurvey(beepIndex){
   if(!isFirst){
     const pending = (STATE.day.pendingActivities || []).slice().sort((a,b)=> b.addedAt - a.addedAt);
     pending.forEach(item=>{
-      const verbPhrase = item.verb || item.label;
-      retro.push(q('retro_did_'+item.id, 'yesno', `Did you do: ${hi(item.label)}?`, {
-        html: true,
+      retro.push(q('retro_did_'+item.id, 'yesno', 'Did you do this?', {
+        activityBanner: item.label,
         pendingId: item.id,
         followupYes: [
-          q('retro_effort_'+item.id, 'slider', `How effortful was ${hi(item.label)}?`, {min:'Not at all', max:'Very much', html:true}),
-          q('retro_enjoy_'+item.id, 'slider', `How enjoyable was ${hi(item.label)}?`, {min:'Not at all', max:'Very much', html:true}),
-          q('retro_should_'+item.id, 'slider', `How much did you feel you had to ${hi(verbPhrase)}?`, {min:'Not at all', max:'Very much', html:true}),
+          q('retro_effort_'+item.id, 'slider', 'How effortful was this?', {min:'Not at all', max:'Very much', activityBanner:item.label}),
+          q('retro_enjoy_'+item.id, 'slider', 'How enjoyable was this?', {min:'Not at all', max:'Very much', activityBanner:item.label}),
+          q('retro_should_'+item.id, 'slider', 'How much did you feel you had to do this?', {min:'Not at all', max:'Very much', activityBanner:item.label}),
         ],
         // Only ask the reason the first time it's marked not-done; later beeps
         // just re-ask yes/no without repeating the reason question.
         followupNo: item.reasonAsked ? [] : [
-          q('retro_reason_'+item.id, 'single', 'Why not?', { choices: NOT_DONE_REASONS }),
+          q('retro_reason_'+item.id, 'single', 'Why not?', { choices: NOT_DONE_REASONS, activityBanner:item.label }),
         ],
       }));
     });
@@ -724,7 +737,7 @@ function startSurvey(type, tag){
   // timeline is a flat, mutable list — follow-up questions are spliced in
   // right after the question that triggered them, so Back always walks the
   // exact questions actually shown, in order, with no separate queue.
-  survey = { type, tag, beepIndex, timeline: base.slice(), pos:0, answers:{}, touched: new Set() };
+  survey = { type, tag, beepIndex, timeline: base.slice(), pos:0, answers:{}, touched: new Set(), startTime: new Date().toISOString() };
   document.getElementById('surveyLayer').classList.add('open');
   renderStep();
 }
@@ -748,8 +761,15 @@ function renderStep(){
   eyebrow.textContent = survey.type === 'beep' ? 'Right now' : survey.type === 'morning' ? 'This morning' : 'This evening';
   body.appendChild(eyebrow);
 
+  if(question.activityBanner){
+    const banner = document.createElement('div');
+    banner.className = 'activity-banner';
+    banner.textContent = question.activityBanner;
+    body.appendChild(banner);
+  }
+
   const qt = document.createElement('div');
-  qt.className = 'q-text';
+  qt.className = 'q-text' + (question.activityBanner ? ' secondary' : '');
   if(question.html){ qt.innerHTML = question.text; } else { qt.textContent = question.text; }
   body.appendChild(qt);
 
@@ -948,34 +968,34 @@ function renderInput(question, holder){
   }
 }
 
-function prospectiveActivityBlock(label, verb, iid){
+function prospectiveActivityBlock(label, iid){
   return shuffled([
-    q('act_effortful_future_'+iid, 'slider', `How effortful do you think ${hi(label)} will be?`, {min:'Not at all', max:'Very much', html:true}),
-    q('act_enjoyable_future_'+iid, 'slider', `How enjoyable do you think ${hi(label)} will be?`, {min:'Not at all', max:'Very much', html:true}),
-    q('act_should_'+iid, 'slider', `How much do you feel you should ${hi(verb)}?`, {min:'Not at all', max:'Very much', html:true}),
-    q('act_whoDecided_'+iid, 'single', `Did someone tell you to ${hi(verb)}? Or are you deciding by yourself?`, {
-      html:true,
+    q('act_effortful_future_'+iid, 'slider', 'How effortful do you think this will be?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_enjoyable_future_'+iid, 'slider', 'How enjoyable do you think this will be?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_should_'+iid, 'slider', 'How much do you feel you should do this?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_whoDecided_'+iid, 'single', 'Did someone tell you to do this? Or are you deciding by yourself?', {
+      activityBanner:label,
       choices:['Me','Someone else'],
       otherExempt:['Someone else'], // the follow-up question already asks who
       followupFor:'Someone else',
-      followup: [ q('act_decidedWho_'+iid, 'single', `Who told you to ${hi(verb)}?`, { choices: RELATIONS, html:true }) ]
+      followup: [ q('act_decidedWho_'+iid, 'single', 'Who told you to do this?', { choices: RELATIONS, activityBanner:label }) ]
     }),
-    q('act_likely_'+iid, 'slider', `How likely are you to ${hi(verb)}?`, {min:'Not likely', max:'Very likely', html:true}),
-    q('act_othersPresent_'+iid, 'yesno', `Will other people be with you while you ${hi(verb)}?`, {
-      html:true,
-      followupYes: [ q('act_othersWho_'+iid, 'multi', `Who will be with you while you ${hi(verb)}?`, { choices: RELATIONS, otherLabel:'Someone else', html:true }) ]
+    q('act_likely_'+iid, 'slider', 'How likely are you to do this?', {min:'Not likely', max:'Very likely', activityBanner:label}),
+    q('act_othersPresent_'+iid, 'yesno', 'Will other people be with you while you do this?', {
+      activityBanner:label,
+      followupYes: [ q('act_othersWho_'+iid, 'multi', 'Who will be with you while you do this?', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
     }),
   ]);
 }
-function retroExtraActivityBlock(label, verb, iid){
+function retroExtraActivityBlock(label, iid){
   return shuffled([
-    q('else_effort_'+iid, 'slider', `How effortful was ${hi(label)}?`, {min:'Not at all', max:'Very much', html:true}),
-    q('else_enjoy_'+iid, 'slider', `How enjoyable was ${hi(label)}?`, {min:'Not at all', max:'Very much', html:true}),
-    q('else_should_'+iid, 'slider', `How much did you feel you had to ${hi(verb)}?`, {min:'Not at all', max:'Very much', html:true}),
+    q('else_effort_'+iid, 'slider', 'How effortful was this?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('else_enjoy_'+iid, 'slider', 'How enjoyable was this?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('else_should_'+iid, 'slider', 'How much did you feel you had to do this?', {min:'Not at all', max:'Very much', activityBanner:label}),
   ]);
 }
 function blockerActivityBlock(label, iid){
-  return [ q('wanted_blocker_'+iid, 'single', `What do you think stood in your way of ${hi(label)}?`, { choices: NOT_DONE_REASONS, html:true }) ];
+  return [ q('wanted_blocker_'+iid, 'single', 'What do you think stood in your way?', { choices: NOT_DONE_REASONS, activityBanner:label }) ];
 }
 
 function computeFollowups(question){
@@ -992,10 +1012,9 @@ function computeFollowups(question){
     // the chunks themselves — never interleaved across activities.
     let blocks = items.map(item=>{
       const label = activityLabel(item, survey.answers, question.id);
-      const verb = activityVerb(item, survey.answers, question.id);
       const iid = item.key;
-      if(question.expandMode === 'prospective') return prospectiveActivityBlock(label, verb, iid);
-      if(question.expandMode === 'retroExtra') return retroExtraActivityBlock(label, verb, iid);
+      if(question.expandMode === 'prospective') return prospectiveActivityBlock(label, iid);
+      if(question.expandMode === 'retroExtra') return retroExtraActivityBlock(label, iid);
       if(question.expandMode === 'blocker') return blockerActivityBlock(label, iid);
       return [];
     });
@@ -1098,13 +1117,16 @@ function finishSurvey(){
     }
   }
 
+  const endTimeIso = new Date().toISOString();
   const entry = {
     id: uid(),
     type: survey.type,
     tag: survey.tag || survey.type,
     participantId: STATE.settings.participantId || '',
-    timestamp: new Date().toISOString(),
     date: STATE.day.date,
+    startTime: survey.startTime,
+    endTime: endTimeIso,
+    durationSeconds: Math.round((new Date(endTimeIso) - new Date(survey.startTime)) / 1000),
     ...flattenAnswers(survey.answers)
   };
   STATE.entries.push(entry);
