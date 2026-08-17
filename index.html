@@ -52,7 +52,7 @@
   .rhythm-track::before{ content:''; position:absolute; left:14px; right:14px; top:11px; height:2px; background:var(--line); z-index:0; }
   .r-node{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
   .r-dot{ width:22px; height:22px; border-radius:50%; border:2.5px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; }
-  .r-dot.done{ background:var(--teal); border-color:var(--teal); }
+  .r-dot.done{ background:var(--good); border-color:var(--good); }
   .r-dot.due{ border-color:var(--amber); box-shadow:0 0 0 4px rgba(217,134,59,0.16); background:#fff; }
   .r-dot.missed{ background:var(--paper-2); border-color:var(--line); }
   .r-dot.missed::after{ content:'—'; color:var(--ink-soft); font-weight:700; }
@@ -63,7 +63,7 @@
   .arc-legend{ display:flex; justify-content:center; gap:14px; margin-top:10px; flex-wrap:wrap; }
   .arc-legend .item{ display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-soft); }
   .arc-legend .swatch{ width:9px; height:9px; border-radius:50%; border:2px solid var(--line); flex:0 0 auto; }
-  .arc-legend .swatch.done{ background:var(--teal); border-color:var(--teal); }
+  .arc-legend .swatch.done{ background:var(--good); border-color:var(--good); }
   .arc-legend .swatch.due{ border-color:var(--amber); box-shadow:0 0 0 2px rgba(217,134,59,0.16); }
   .arc-legend .swatch.missed{ background:var(--paper-2); border-color:var(--line); }
   .arc-legend .swatch.upcoming{ background:#fff; }
@@ -96,7 +96,7 @@
 
   .section-title{ font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft); margin: 22px 0 8px 4px; }
 
-  .footer-actions{ display:flex; gap:10px; margin-top:20px; }
+  .footer-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
 
   /* --- Survey overlay --- */
   #surveyLayer{ position:fixed; inset:0; background:var(--paper); z-index:50; display:none; flex-direction:column; }
@@ -157,6 +157,17 @@
 
   #settingsLayer{ position:fixed; inset:0; background:var(--paper); z-index:51; display:none; flex-direction:column; }
   #settingsLayer.open{ display:flex; }
+  #instructionsLayer{ position:fixed; inset:0; background:var(--paper); z-index:52; display:none; flex-direction:column; }
+  #instructionsLayer.open{ display:flex; }
+  #daySummaryLayer{ position:fixed; inset:0; background:linear-gradient(180deg, #FFF6E0, var(--paper) 55%); z-index:53; display:none; flex-direction:column; }
+  #daySummaryLayer.open{ display:flex; }
+  .summary-headline{ font-family:Georgia,serif; font-size:28px; font-weight:800; margin-bottom:6px; }
+  .summary-sub{ font-size:14px; color:var(--ink-soft); margin-bottom:28px; }
+  .mood-row{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
+  .mood-chip{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .mood-chip .mood-emoji{ font-size:28px; }
+  .mood-chip .mood-label{ font-size:10px; color:var(--ink-soft); font-family:'SFMono-Regular',monospace; }
+  .summary-stat{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 18px; margin:0 auto 12px; max-width:340px; font-size:14.5px; font-weight:600; color:var(--teal-deep); }
   .settings-field{ margin-bottom:22px; }
   .settings-field label{ display:block; font-weight:600; font-size:14.5px; margin-bottom:8px; }
   .settings-field input[type=text], .settings-field input[type=time]{ width:100%; }
@@ -192,9 +203,10 @@
   </div>
 
   <div class="footer-actions">
-    <button class="btn ghost" id="btnHistory" style="flex:1">History</button>
-    <button class="btn ghost" id="btnExport" style="flex:1">Export CSV</button>
-    <button class="btn ghost" id="btnSettings" style="flex:1">Settings</button>
+    <button class="btn ghost" id="btnHistory">History</button>
+    <button class="btn ghost" id="btnExport">Export CSV</button>
+    <button class="btn ghost" id="btnInstructions">Instructions</button>
+    <button class="btn ghost" id="btnSettings">Settings</button>
   </div>
 </div>
 
@@ -226,17 +238,33 @@
         <button class="btn ghost toggle-btn" id="setPdYes" data-val="yes">Yes</button>
         <button class="btn ghost toggle-btn" id="setPdNo" data-val="no">No</button>
       </div>
-      <div class="settings-hint">If no, medication and motor-symptom questions will be skipped.</div>
+      <div class="settings-hint">If no, motor-symptom questions will be skipped.</div>
     </div>
     <div class="settings-field">
-      <label>What time do you usually wake up?</label>
-      <input type="time" id="setWakeTime" />
-      <div class="settings-hint">Your morning check-in can be done any time, but a reminder comes 15 minutes after this.</div>
+      <label>Do you take dopaminergic medication?</label>
+      <div class="toggle-row">
+        <button class="btn ghost toggle-btn" id="setMedYes" data-val="yes">Yes</button>
+        <button class="btn ghost toggle-btn" id="setMedNo" data-val="no">No</button>
+      </div>
+      <div class="settings-hint">If no, medication-timing questions will be skipped.</div>
     </div>
     <div class="settings-field">
-      <label>What time do you usually go to bed?</label>
-      <input type="time" id="setBedTime" />
-      <div class="settings-hint">Your evening check-in can be done any time, but a reminder comes 15 minutes before this. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
+      <label>What time do you usually wake up? (earliest — latest)</label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="time" id="setWakeEarliest" style="flex:1;" />
+        <span>—</span>
+        <input type="time" id="setWakeLatest" style="flex:1;" />
+      </div>
+      <div class="settings-hint">Your morning check-in window runs from the earliest time up to 30 minutes after the latest time.</div>
+    </div>
+    <div class="settings-field">
+      <label>What time do you usually go to sleep? (earliest — latest)</label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="time" id="setBedEarliest" style="flex:1;" />
+        <span>—</span>
+        <input type="time" id="setBedLatest" style="flex:1;" />
+      </div>
+      <div class="settings-hint">Your evening check-in window runs from 30 minutes before the earliest time up to the latest time. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
     </div>
     <div class="settings-field">
       <label>Reliable notifications (recommended)</label>
@@ -256,9 +284,49 @@
       <input type="checkbox" id="setPilotMode" />
       <label for="setPilotMode">Pilot / test mode</label>
     </div>
+    <div class="settings-hint" style="margin-top:2px;">Requires a password. Time windows are not enforced while this is on.</div>
+    <div id="pilotPasswordRow" style="display:none; gap:8px; margin-top:8px;">
+      <input type="password" id="pilotPasswordInput" placeholder="Password" style="flex:1;" />
+      <button class="btn small" id="pilotPasswordConfirm" type="button">Confirm</button>
+    </div>
   </div>
   <div class="survey-foot">
     <button class="btn" id="settingsSave" style="flex:1;">Save</button>
+  </div>
+</div>
+
+<div id="instructionsLayer">
+  <div class="survey-head">
+    <button class="x" id="instructionsClose">✕</button>
+    <div style="font-weight:600;">Instructions</div>
+  </div>
+  <div class="survey-body" id="instructionsBody" style="padding-top:22px;">
+    <div class="settings-field">
+      <label>How to use the app</label>
+      <div class="settings-hint" style="font-size:14px; line-height:1.55;">
+        Each day has 8 check-ins: a morning questionnaire, 6 short "beeps" spread through the day, and an evening questionnaire. The row of circles at the top of the home screen shows all 8 — filled green with a check once done, an orange outline when open right now, grey with a dash if missed, and blank if still to come.<br><br>
+        Each check-in only opens during its own time window (shown under its name on the home screen). Tap "Start" during that window to answer it. If a window closes before you complete it, it's marked missed and can't be reopened.<br><br>
+        Use "Note for the research team" any time to tell us about a difficulty, a question, or anything else — no need to wait for a check-in.
+      </div>
+    </div>
+    <div class="settings-field">
+      <label>Notifications</label>
+      <div class="settings-hint" style="font-size:14px; line-height:1.55;">
+        For reliable reminders, install the free <b>ntfy</b> app from the Play Store, open it, tap "+", and subscribe to the topic name shown in Settings under "Reliable notifications." That's the whole setup — after that, ntfy delivers each reminder on its own, even if this app or Chrome is fully closed.<br><br>
+        Tapping a notification opens this app directly into the right questionnaire.
+      </div>
+    </div>
+    <div class="settings-field">
+      <label>Having trouble?</label>
+      <div class="settings-hint" style="font-size:14px;">Contact <a href="mailto:dorothee.morand-grondin@mail.mcgill.ca">dorothee.morand-grondin@mail.mcgill.ca</a></div>
+    </div>
+  </div>
+</div>
+
+<div id="daySummaryLayer">
+  <div class="survey-body" id="daySummaryBody" style="padding-top:60px; text-align:center;"></div>
+  <div class="survey-foot">
+    <button class="btn" id="daySummaryClose" style="flex:1;">Close</button>
   </div>
 </div>
 
@@ -272,14 +340,14 @@
 ----------------------------------------------------------------*/
 
 const STORE_KEY = 'ema_state_v1';
-const WAKE_START_DEFAULT = '08:00';
-const WAKE_END_DEFAULT = '22:00';
+const WAKE_EARLIEST_DEFAULT = '07:00';
+const WAKE_LATEST_DEFAULT = '09:00';
+const BED_EARLIEST_DEFAULT = '21:00';
+const BED_LATEST_DEFAULT = '23:00';
 const RESEARCHER_EMAIL_DEFAULT = 'dorotheemgrondin1@gmail.com';
 const BEEPS_PER_DAY = 6;
 const MIN_GAP_MIN = 100; // minimum minutes between beeps (targets ~2h apart)
 const BEEP_WINDOW_MIN = 30; // how long each beep stays open before it's missed
-const MORNING_NOTIF_OFFSET = 15; // minutes after wake time
-const EVENING_NOTIF_OFFSET = 15; // minutes before bed time
 
 function todayStr(d = new Date()){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -289,6 +357,7 @@ function timeStr(d){ return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function nowMinutes(){ const d = new Date(); return d.getHours()*60 + d.getMinutes(); }
 function minToHHMM(m){ m = ((m%1440)+1440)%1440; return pad(Math.floor(m/60)) + ':' + pad(Math.floor(m%60)); }
+function toMin(hhmm){ const [h,m] = hhmm.split(':').map(Number); return h*60+m; }
 
 function randTopicSuffix(){ return Math.random().toString(36).slice(2,8) + Math.random().toString(36).slice(2,6); }
 
@@ -297,41 +366,83 @@ function loadState(){
   let state = raw ? JSON.parse(raw) : null;
   if(!state){
     state = {
-      settings: { wakeStart: WAKE_START_DEFAULT, wakeEnd: WAKE_END_DEFAULT, notifOn:false, participantId:'', hasParkinsons:null, pilotMode:false, researcherEmail: RESEARCHER_EMAIL_DEFAULT, ntfyTopic: 'dailyrhythm-'+randTopicSuffix() },
+      settings: {
+        wakeEarliest: WAKE_EARLIEST_DEFAULT, wakeLatest: WAKE_LATEST_DEFAULT,
+        bedEarliest: BED_EARLIEST_DEFAULT, bedLatest: BED_LATEST_DEFAULT,
+        notifOn:false, participantId:'', hasParkinsons:null, takesMedication:null, pilotMode:false,
+        researcherEmail: RESEARCHER_EMAIL_DEFAULT, ntfyTopic: 'dailyrhythm-'+randTopicSuffix(),
+      },
       schedule: { date: null, times: [] },
+      futureSchedules: {}, // { 'YYYY-MM-DD': ['08:45', ...] } — pre-generated ahead of time so the day's plan is fixed before it arrives
+      ntfyScheduledThrough: null, // last calendar date (YYYY-MM-DD) we've already pushed notifications for
+      onboarded: false, // true once initial settings have been saved once
       entries: [],
-      day: { date: null, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [], ntfyScheduledFor: null }
+      day: { date: null, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] }
     };
   }
   if(!state.day.pendingActivities) state.day.pendingActivities = [];
   if(state.settings.participantId === undefined) state.settings.participantId = '';
   if(state.settings.hasParkinsons === undefined) state.settings.hasParkinsons = null;
+  if(state.settings.takesMedication === undefined) state.settings.takesMedication = null;
   if(state.settings.pilotMode === undefined) state.settings.pilotMode = false;
   if(!state.settings.researcherEmail) state.settings.researcherEmail = RESEARCHER_EMAIL_DEFAULT;
   if(!state.settings.ntfyTopic) state.settings.ntfyTopic = 'dailyrhythm-'+randTopicSuffix();
-  if(state.day.ntfyScheduledFor === undefined) state.day.ntfyScheduledFor = null;
+  if(!state.futureSchedules) state.futureSchedules = {};
+  if(state.ntfyScheduledThrough === undefined) state.ntfyScheduledThrough = null;
+  if(state.onboarded === undefined) state.onboarded = !!state.settings.participantId;
+  // Migrate old single wakeStart/wakeEnd settings (pre-range) to ranges.
+  if(state.settings.wakeStart && !state.settings.wakeEarliest){
+    state.settings.wakeEarliest = state.settings.wakeStart;
+    state.settings.wakeLatest = state.settings.wakeStart;
+    state.settings.bedEarliest = state.settings.wakeEnd || BED_EARLIEST_DEFAULT;
+    state.settings.bedLatest = state.settings.wakeEnd || BED_LATEST_DEFAULT;
+  }
+  if(!state.settings.wakeEarliest) state.settings.wakeEarliest = WAKE_EARLIEST_DEFAULT;
+  if(!state.settings.wakeLatest) state.settings.wakeLatest = WAKE_LATEST_DEFAULT;
+  if(!state.settings.bedEarliest) state.settings.bedEarliest = BED_EARLIEST_DEFAULT;
+  if(!state.settings.bedLatest) state.settings.bedLatest = BED_LATEST_DEFAULT;
+  delete state.day.ntfyScheduledFor; // superseded by the rolling ntfyScheduledThrough watermark
   return state;
 }
 let STATE = loadState();
 function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
 
+/* Window boundaries, in minutes-since-midnight. */
+function morningWindow(){
+  return { start: toMin(STATE.settings.wakeEarliest), end: toMin(STATE.settings.wakeLatest) + 30 };
+}
+function eveningWindow(){
+  return { start: toMin(STATE.settings.bedEarliest) - 30, end: toMin(STATE.settings.bedLatest) };
+}
+function checkpointStatus(win, done){
+  if(done) return 'done';
+  if(STATE.settings.pilotMode) return 'available';
+  const now = nowMinutes();
+  if(now < win.start) return 'upcoming';
+  if(now <= win.end) return 'available';
+  return 'missed';
+}
+
 function ensureToday(){
   const t = todayStr();
   if(STATE.day.date !== t){
-    STATE.day = { date: t, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [], ntfyScheduledFor: null };
+    STATE.day = { date: t, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] };
   }
   if(STATE.schedule.date !== t){
-    STATE.schedule = { date: t, times: generateBeepTimes() };
+    // Use a schedule pre-generated in advance if one exists (so it matches
+    // what was already promised via notification); otherwise generate fresh
+    // now (e.g. the very first day, before any advance scheduling has run).
+    const times = STATE.futureSchedules[t] || generateBeepTimes();
+    STATE.schedule = { date: t, times };
+    delete STATE.futureSchedules[t];
   }
   saveState();
-  scheduleNtfyToday();
+  scheduleNtfyUpcoming();
 }
 
 function generateBeepTimes(){
-  const [sh, sm] = STATE.settings.wakeStart.split(':').map(Number);
-  const [eh, em] = STATE.settings.wakeEnd.split(':').map(Number);
-  const startMin = sh*60+sm + 30; // 30 min after wake (after the morning window)
-  const endMin = eh*60+em - 30;   // 30 min before bed (before the evening window)
+  const startMin = morningWindow().end; // beeps start once the morning window closes
+  const endMin = eveningWindow().start;  // and stop once the evening window opens
   const span = Math.max(endMin - startMin, MIN_GAP_MIN*BEEPS_PER_DAY);
   const slot = span / BEEPS_PER_DAY;
   const times = [];
@@ -415,8 +526,8 @@ function checkDueBeeps(){
   // already past by the time the app is reopened.
   if(!STATE.settings.ntfyTopic){
     const nowMin = nowMinutes();
-    const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
-    if(!STATE.day.morningDone && nowMin >= (sh*60+sm+MORNING_NOTIF_OFFSET) && nowMin < (sh*60+sm+MORNING_NOTIF_OFFSET+30) && !notifiedTags.has('morning-'+STATE.day.date)){
+    const mw = morningWindow();
+    if(!STATE.day.morningDone && nowMin >= mw.start && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
       fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
       markNotified('morning-'+STATE.day.date);
     }
@@ -427,8 +538,8 @@ function checkDueBeeps(){
         markNotified(tag);
       }
     });
-    const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
-    if(!STATE.day.eveningDone && nowMin >= (eh*60+em-EVENING_NOTIF_OFFSET) && nowMin < (eh*60+em) && !notifiedTags.has('evening-'+STATE.day.date)){
+    const ew = eveningWindow();
+    if(!STATE.day.eveningDone && nowMin >= ew.start && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
       fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
       markNotified('evening-'+STATE.day.date);
     }
@@ -436,51 +547,89 @@ function checkDueBeeps(){
   renderHome();
 }
 
+const NTFY_ROLL_AHEAD_DAYS = 2; // keep today + this many days ahead scheduled with ntfy
+
 /* ---------------- ntfy relay (reliable notifications via a native app) ----------------
    ntfy.sh lets a message be scheduled for future delivery (the 'Delay' header),
    and its own installed Android app delivers it via a real background service —
-   independent of whether this web app or Chrome is open. We push today's whole
-   schedule once, as soon as the day's beep times are known. */
-async function scheduleNtfyToday(){
-  if(!STATE.settings.ntfyTopic) return;
-  if(STATE.day.ntfyScheduledFor === STATE.day.date) return; // already pushed today
-  if(!navigator.onLine) return; // try again next time ensureToday() runs
+   independent of whether this web app or Chrome is open.
 
-  const [sh,sm] = STATE.settings.wakeStart.split(':').map(Number);
-  const [eh,em] = STATE.settings.wakeEnd.split(':').map(Number);
+   Critically, we can only push a day's schedule when the app is opened — so we
+   push several days ahead every time it *is* opened, keeping a rolling buffer.
+   That way a day the app never gets opened still has its notifications queued,
+   as long as the app was opened at some point in the preceding couple of days. */
+function checkpointsForDay(beepTimes){
   const points = [
-    { mins: sh*60+sm+MORNING_NOTIF_OFFSET, title:'Good morning ☀️', body:'Your morning check-in is ready.', tag:'morning' },
-    ...STATE.schedule.times.map((t,idx)=>{
-      const w = beepWindowMinutes(idx);
-      return { mins: w.start, title:'It\u2019s time for some questions', body:'You have 30 minutes to answer.', tag:'beep-'+idx };
-    }),
-    { mins: eh*60+em-EVENING_NOTIF_OFFSET, title:'Evening check-in 🌙', body:'A few questions to round off the day.', tag:'evening' },
+    { mins: morningWindow().start, title:'Good morning ☀️', body:'Your morning check-in is ready.', tag:'morning' },
   ];
+  beepTimes.forEach((t, idx)=>{
+    const [th,tm] = t.split(':').map(Number);
+    points.push({ mins: th*60+tm, title:'It\u2019s time for some questions', body:'You have 30 minutes to answer.', tag:'beep-'+idx });
+  });
+  points.push({ mins: eveningWindow().start, title:'Evening check-in 🌙', body:'A few questions to round off the day.', tag:'evening' });
+  return points;
+}
 
-  const midnight = new Date(); midnight.setHours(0,0,0,0);
-  const now = Date.now();
+async function scheduleNtfyUpcoming(){
+  if(!STATE.settings.ntfyTopic) return;
+  if(!navigator.onLine) return;
+
+  const todayKey = todayStr();
+  const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+  const targetEndKey = todayStr(new Date(todayMidnight.getTime() + NTFY_ROLL_AHEAD_DAYS*86400000));
+
+  if(STATE.ntfyScheduledThrough && STATE.ntfyScheduledThrough >= targetEndKey) return; // buffer already full
+
+  let startKey = todayKey;
+  if(STATE.ntfyScheduledThrough && STATE.ntfyScheduledThrough >= todayKey){
+    const d = new Date(STATE.ntfyScheduledThrough+'T00:00:00');
+    d.setDate(d.getDate()+1);
+    startKey = todayStr(d);
+  }
+
   const topic = STATE.settings.ntfyTopic;
   const baseUrl = location.origin + location.pathname;
-  let allSent = true;
-  for(const p of points){
-    const deliverAt = midnight.getTime() + p.mins*60000;
-    if(deliverAt <= now + 60000) continue; // skip anything already past
-    try{
-      await fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
-        method: 'POST',
-        headers: {
-          'Title': p.title,
-          'Delay': String(Math.floor(deliverAt/1000)),
-          'Click': baseUrl + '?open=' + encodeURIComponent(p.tag),
-        },
-        body: p.body,
-      });
-    }catch(e){
-      allSent = false; // network hiccup — try again on the next check
+  const now = Date.now();
+  let cursor = new Date(startKey+'T00:00:00');
+  const endDate = new Date(targetEndKey+'T00:00:00');
+  let lastGoodKey = (STATE.ntfyScheduledThrough && STATE.ntfyScheduledThrough >= todayKey) ? STATE.ntfyScheduledThrough : null;
+
+  while(cursor <= endDate){
+    const dayKey = todayStr(cursor);
+    let beepTimes;
+    if(dayKey === STATE.schedule.date){
+      beepTimes = STATE.schedule.times; // today's already-committed schedule
+    } else {
+      beepTimes = STATE.futureSchedules[dayKey] || generateBeepTimes();
+      STATE.futureSchedules[dayKey] = beepTimes; // cache so that day uses these same times when it arrives
     }
+    const dayMidnight = new Date(cursor); dayMidnight.setHours(0,0,0,0);
+    const points = checkpointsForDay(beepTimes);
+    let dayOk = true;
+    for(const p of points){
+      const deliverAt = dayMidnight.getTime() + p.mins*60000;
+      if(deliverAt <= now + 60000) continue; // skip anything already past (only relevant to today)
+      try{
+        await fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
+          method: 'POST',
+          headers: {
+            'Title': p.title,
+            'Delay': String(Math.floor(deliverAt/1000)),
+            'Click': baseUrl + '?open=' + encodeURIComponent(p.tag),
+          },
+          body: p.body,
+        });
+      }catch(e){
+        dayOk = false; // network hiccup — stop here, retry from this day next time
+      }
+    }
+    if(!dayOk) break;
+    lastGoodKey = dayKey;
+    cursor.setDate(cursor.getDate()+1);
   }
-  if(allSent){
-    STATE.day.ntfyScheduledFor = STATE.day.date;
+
+  if(lastGoodKey){
+    STATE.ntfyScheduledThrough = lastGoodKey;
     saveState();
   }
 }
@@ -491,13 +640,15 @@ function renderArc(){
   const wrap = document.getElementById('arcWrap');
   const nodes = [];
 
-  nodes.push({ kind:'morning', label: 'Morning questionnaire', wide:true, done: STATE.day.morningDone, status: STATE.day.morningDone ? 'done' : 'available' });
+  const mStatus = checkpointStatus(morningWindow(), STATE.day.morningDone);
+  nodes.push({ kind:'morning', label: 'Morning questionnaire', wide:true, done: STATE.day.morningDone, status: mStatus });
   STATE.schedule.times.forEach((t, idx)=>{
     const done = STATE.day.beepsDone.includes(idx);
     const status = done ? 'done' : beepStatus(idx);
     nodes.push({ kind:'beep', label:t, done, status });
   });
-  nodes.push({ kind:'evening', label: 'Evening questionnaire', wide:true, done: STATE.day.eveningDone, status: STATE.day.eveningDone ? 'done' : 'available' });
+  const eStatus = checkpointStatus(eveningWindow(), STATE.day.eveningDone);
+  nodes.push({ kind:'evening', label: 'Evening questionnaire', wide:true, done: STATE.day.eveningDone, status: eStatus });
 
   wrap.innerHTML = `
     <div class="rhythm-track">
@@ -517,13 +668,13 @@ function renderArc(){
 
   const done = nodes.filter(n=>n.done).length;
   const missed = nodes.filter(n=>!n.done && n.status==='missed').length;
-  const parts = [`${done} of ${nodes.length} done`];
+  const parts = [`${done} of ${nodes.length} questionnaires done today`];
   if(missed) parts.push(`${missed} missed`);
   document.getElementById('arcCaption').textContent = parts.join(' · ');
   document.getElementById('arcLegend').innerHTML = `
-    <div class="item"><div class="swatch done"></div>Done</div>
+    <div class="item"><div class="swatch done"></div>Completed</div>
     <div class="item"><div class="swatch due"></div>Open now</div>
-    <div class="item"><div class="swatch upcoming"></div>Upcoming</div>
+    <div class="item"><div class="swatch upcoming"></div>Not opened yet</div>
     <div class="item"><div class="swatch missed"></div>Missed</div>
   `;
 }
@@ -542,16 +693,17 @@ function renderHome(){
     d.innerHTML = `<div class="dot ${kind}"></div>
       <div class="meta"><div class="t">${title}</div><div class="s">${sub}</div></div>`;
     const btn = document.createElement('button');
-    if(state==='done'){ btn.className='btn small done'; btn.textContent='✓ Done'; btn.disabled=true; }
+    if(state==='done'){ btn.className='btn small done'; btn.textContent='Completed'; btn.disabled=true; }
     else if(state==='missed'){ btn.className='btn small muted'; btn.textContent='Missed'; btn.disabled=true; }
-    else if(state==='upcoming'){ btn.className='btn small ghost'; btn.textContent='Not yet'; btn.disabled=true; }
+    else if(state==='upcoming'){ btn.className='btn small ghost'; btn.textContent='Not opened yet'; btn.disabled=true; }
     else { btn.className='btn small'; btn.textContent='Start'; btn.disabled=false; btn.onclick=onClick; }
     d.appendChild(btn);
     el.appendChild(d);
   }
 
-  card('morning', 'Morning check-in', 'How the day is starting',
-    STATE.day.morningDone ? 'done' : 'available', ()=>startSurvey('morning'));
+  const mw = morningWindow();
+  card('morning', 'Morning check-in', `Window ${minToHHMM(mw.start)}\u2013${minToHHMM(mw.end)}`,
+    checkpointStatus(mw, STATE.day.morningDone), ()=>startSurvey('morning'));
 
   STATE.schedule.times.forEach((t, idx)=>{
     const done = STATE.day.beepsDone.includes(idx);
@@ -562,8 +714,9 @@ function renderHome(){
       ()=>startSurvey('beep', 'beep-'+idx));
   });
 
-  card('evening', 'Evening check-in', 'Rounding off the day',
-    STATE.day.eveningDone ? 'done' : 'available', ()=>startSurvey('evening'));
+  const ew = eveningWindow();
+  card('evening', 'Evening check-in', `Window ${minToHHMM(ew.start)}\u2013${minToHHMM(ew.end)}`,
+    checkpointStatus(ew, STATE.day.eveningDone), ()=>startSurvey('evening'));
 
   if(STATE.settings.pilotMode){
     const note = document.createElement('div');
@@ -661,7 +814,6 @@ function activityChoiceList(){
   return list;
 }
 const RELATIONS = ['Partner','Children','Family members','Friends','Colleagues','Neighbor','Someone else'];
-const SLEEP_PROBLEMS = ['I had no problems','Waking up throughout the night','Cannot breathe comfortably','Cough or snore loudly','Trouble falling asleep','Having pain','Feeling too hot or too cold','Restless legs','Other'];
 const NOT_DONE_REASONS = ['I had no energy','It would be too much work','I had too much to do','Physical problems',"I couldn't concentrate",'Something else'];
 
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -670,21 +822,16 @@ function hi(label){ return '<span class="act-hl">' + escHtml(lowerFirst(label)) 
 
 function q(id, type, text, opts={}){ return Object.assign({ id, type, text }, opts); }
 
-function moodQ(idSuffix=''){
-  return q('mood'+idSuffix, 'slider', 'How are you feeling right now?', { min:'🙁', max:'🙂' });
-}
-
 function isPD(){ return STATE.settings.hasParkinsons !== false; }
+function takesMedication(){ return STATE.settings.takesMedication !== false; }
 
 function buildMorningSurvey(){
-  const fixed = [ moodQ() ];
+  const fixed = [
+    q('mood', 'slider', 'Good morning!<br>How are you feeling right now?', { min:'🙁', max:'🙂', html:true }),
+  ];
   const optionalQs = [
-    q('rested','slider','How rested do you feel?', {min:'Very tired', max:'Very rested'}),
     q('sleepQuality','slider','How was your sleep last night?', {min:'Very bad', max:'Very good'}),
-    q('hardMentally','yesno','Was it mentally difficult to get up?'),
-    q('hardPhysically','yesno','Was it physically difficult to get up?'),
-    q('sleepProblems','multi','During the last night, did you have any of these sleeping problems?', { choices: SLEEP_PROBLEMS, otherLabel:'Other', exclusiveOption:'I had no problems' }),
-    isPD() && q('medTaken','yesno','Did you already take your first dose of medication today?', {
+    takesMedication() && q('medTaken','yesno','Did you already take your first dose of medication today?', {
       followupYes: [ q('medTime','time','At what time did you take it?') ]
     }),
   ].filter(Boolean);
@@ -696,15 +843,19 @@ function buildBeepSurvey(beepIndex){
   const isFirst = beepIndex === 0;
   const isLast = beepIndex === BEEPS_PER_DAY - 1;
 
+  const fixed1 = [
+    q('mood_beep', 'slider', 'Good day! It\u2019s time for some questions.<br>How are you feeling right now?', { min:'🙁', max:'🙂', html:true }),
+  ];
+
   const stateQs = [
     isPD() && q('motorProblems','slider','To what extent do you experience motor problems right now?', {min:'No problems', max:'Big problems'}),
     isPD() && q('onOff','single','Are you feeling ON or OFF dopamine?', { choices:['On','On → Off','Off','Off → On','Overactive',"I'm not sure"] }),
+    takesMedication() && q('lastMedTime','time','At what time did you take dopaminergic medication for the last time?'),
     q('energy','slider','How energetic are you right now?', {min:'Very tired', max:'Very energetic'}),
     q('concentration','slider','How is your concentration at the moment?', {min:'Very poor', max:'Very good'}),
-    moodQ('_beep'),
-    isPD() && q('lastMedTime','time','At what time did you take dopaminergic medication for the last time?'),
   ].filter(Boolean);
   const rand1 = shuffled(stateQs);
+
   const fixed2 = [
     q('location','single','Where are you right now?', { choices:['Home','Work',"Someone else's house",'Outside','Somewhere else'], otherOnLast:true }),
     q('withSomeone','yesno','Were you with someone during the last 2 hours?', {
@@ -716,28 +867,37 @@ function buildBeepSurvey(beepIndex){
   ];
 
   // --- Retrospective: ask about activities planned at previous beeps,
-  // most recently planned first, then older still-outstanding ones. ---
+  // most recently planned first, then older still-outstanding ones.
+  // Three-way status: not started / started-but-incomplete / completed. ---
   let retro = [];
   if(!isFirst){
     const pending = (STATE.day.pendingActivities || []).slice().sort((a,b)=> b.addedAt - a.addedAt);
     pending.forEach(item=>{
-      retro.push(q('retro_did_'+item.id, 'yesno', 'Did you do this?', {
-        activityBanner: item.label,
+      const banner = item.label;
+      const ratingTrio = ()=> shuffled([
+        q('retro_effort_'+item.id, 'slider', 'How effortful did this activity feel?', {min:'Not at all', max:'Very much', activityBanner:banner}),
+        q('retro_enjoy_'+item.id, 'slider', 'How enjoyable did this activity feel?', {min:'Not at all', max:'Very much', activityBanner:banner}),
+        q('retro_should_'+item.id, 'slider', 'How much do you feel you had to do this activity?', {min:'Not at all', max:'Very much', activityBanner:banner}),
+      ]);
+      retro.push(q('retro_status_'+item.id, 'single', 'Did you do this activity?', {
+        activityBanner: banner,
         pendingId: item.id,
-        followupYes: [
-          q('retro_effort_'+item.id, 'slider', 'How effortful was this?', {min:'Not at all', max:'Very much', activityBanner:item.label}),
-          q('retro_enjoy_'+item.id, 'slider', 'How enjoyable was this?', {min:'Not at all', max:'Very much', activityBanner:item.label}),
-          q('retro_should_'+item.id, 'slider', 'How much did you feel you had to do this?', {min:'Not at all', max:'Very much', activityBanner:item.label}),
-        ],
-        // Only ask the reason the first time it's marked not-done; later beeps
-        // just re-ask yes/no without repeating the reason question.
-        followupNo: item.reasonAsked ? [] : [
-          q('retro_reason_'+item.id, 'single', 'Why not?', { choices: NOT_DONE_REASONS, activityBanner:item.label }),
-        ],
+        choices: ['No', 'I initiated the activity, but did not complete it', 'I completed the activity'],
+        branches: {
+          'No': [
+            q('retro_whyNotInit_'+item.id, 'single', 'Why did you not initiate this activity?', { choices: NOT_DONE_REASONS, activityBanner:banner }),
+            q('retro_initLater_'+item.id, 'yesno', 'Will you initiate this activity later today?', { activityBanner:banner }),
+          ],
+          'I initiated the activity, but did not complete it': [
+            q('retro_whyNotComplete_'+item.id, 'single', 'Why did you not complete this activity?', { choices: NOT_DONE_REASONS, activityBanner:banner }),
+            q('retro_completeLater_'+item.id, 'yesno', 'Will you complete this activity later today?', { activityBanner:banner }),
+            ...ratingTrio(),
+          ],
+          'I completed the activity': ratingTrio(),
+        },
       }));
     });
-    // Catch-all for anything unplanned they also did — asks the same
-    // effort/enjoyment/obligation cluster per selected activity.
+    // Catch-all for anything unplanned they also did.
     retro.push(q('anythingElse','yesno','Did you do anything else during the last 2 hours that we haven\u2019t asked about?', {
       followupYes: [
         q('elseActivity','activity','What did you do?', { hint:'Select as many as apply.', expandMode:'retroExtra' }),
@@ -746,8 +906,7 @@ function buildBeepSurvey(beepIndex){
   }
 
   // --- Prospective: what will you do in the next 2 hours (multi-select).
-  // Follow-up questions are generated per selected activity once this
-  // question is answered (see computeFollowups/expandMode). ---
+  // Fixed order, no shuffling — only 3 questions per activity. ---
   let prospective = [];
   if(!isLast){
     prospective.push(q('nextActivity','activity','What will you do in the next 2 hours?', {
@@ -756,11 +915,13 @@ function buildBeepSurvey(beepIndex){
     }));
   }
 
-  return [...rand1, ...fixed2, ...retro, ...prospective];
+  return [...fixed1, ...rand1, ...fixed2, ...retro, ...prospective];
 }
 
 function buildEveningSurvey(){
-  const fixed = [ moodQ('_evening') ];
+  const fixed = [
+    q('mood_evening', 'slider', 'Good evening! Here are a few questions to round off the day.<br>How are you feeling right now?', { min:'🙁', max:'🙂', html:true }),
+  ];
   const rand = shuffled([
     q('dayRating','slider','How do you rate your day?', {min:'Very bad', max:'Very good'}),
     q('interactionBurden','slider','If you spent time with people today, did you enjoy the interaction or was it a burden?', {min:'It felt like a burden', max:'I enjoyed it'}),
@@ -775,7 +936,8 @@ function buildEveningSurvey(){
     }),
     q('wantedToDo','yesno',"Is there something that you didn't do, but that you wanted to do?", {
       followupYes: [
-        q('wantedWhat','activity','What was it that you wanted to do?', { hint:'Select as many as apply.', expandMode:'blocker' }),
+        q('wantedWhat','single','What was it that you wanted to do?', { choices:['A social activity','Work','A sport','A leisure activity','Something else'] }),
+        q('wantedBlocker','single','What do you think stood in your way?', { choices: NOT_DONE_REASONS }),
       ]
     }),
   ]);
@@ -789,8 +951,24 @@ function startSurvey(type, tag){
   ensureToday();
   let base;
   let beepIndex = null;
-  if(type==='morning') base = buildMorningSurvey();
-  else if(type==='evening') base = buildEveningSurvey();
+  if(type==='morning'){
+    const status = checkpointStatus(morningWindow(), STATE.day.morningDone);
+    if(status !== 'available' && !STATE.day.morningDone){
+      toast(status==='missed' ? 'This check-in window has closed' : 'Not open yet');
+      renderHome();
+      return;
+    }
+    base = buildMorningSurvey();
+  }
+  else if(type==='evening'){
+    const status = checkpointStatus(eveningWindow(), STATE.day.eveningDone);
+    if(status !== 'available' && !STATE.day.eveningDone){
+      toast(status==='missed' ? 'This check-in window has closed' : 'Not open yet');
+      renderHome();
+      return;
+    }
+    base = buildEveningSurvey();
+  }
   else {
     beepIndex = tag ? Number(tag.split('-')[1]) : 0;
     if(beepStatus(beepIndex) !== 'available' && !STATE.day.beepsDone.includes(beepIndex)){
@@ -1035,33 +1213,28 @@ function renderInput(question, holder){
 }
 
 function prospectiveActivityBlock(label, iid){
-  return shuffled([
-    q('act_effortful_future_'+iid, 'slider', 'How effortful do you think this will be?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('act_enjoyable_future_'+iid, 'slider', 'How enjoyable do you think this will be?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('act_should_'+iid, 'slider', 'How much do you feel you should do this?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('act_whoDecided_'+iid, 'single', 'Did someone tell you to do this? Or are you deciding by yourself?', {
-      activityBanner:label,
-      choices:['Me','Someone else'],
-      otherExempt:['Someone else'], // the follow-up question already asks who
-      followupFor:'Someone else',
-      followup: [ q('act_decidedWho_'+iid, 'single', 'Who told you to do this?', { choices: RELATIONS, activityBanner:label }) ]
-    }),
-    q('act_likely_'+iid, 'slider', 'How likely are you to do this?', {min:'Not likely', max:'Very likely', activityBanner:label}),
-    q('act_othersPresent_'+iid, 'yesno', 'Will other people be with you while you do this?', {
-      activityBanner:label,
-      followupYes: [ q('act_othersWho_'+iid, 'multi', 'Who will be with you while you do this?', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
-    }),
-  ]);
+  // Fixed order, no shuffling — matches "non-randomized order within the block".
+  return [
+    q('act_effortful_future_'+iid, 'slider', 'How effortful do you think this activity will feel?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_enjoyable_future_'+iid, 'slider', 'How enjoyable do you think this activity will feel?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_should_'+iid, 'slider', 'How much do you think you should do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+  ];
 }
 function retroExtraActivityBlock(label, iid){
   return shuffled([
-    q('else_effort_'+iid, 'slider', 'How effortful was this?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('else_enjoy_'+iid, 'slider', 'How enjoyable was this?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('else_should_'+iid, 'slider', 'How much did you feel you had to do this?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('else_effort_'+iid, 'slider', 'How effortful was this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('else_enjoy_'+iid, 'slider', 'How enjoyable was this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('else_should_'+iid, 'slider', 'How much do you feel you had to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('else_othersPresent_'+iid, 'yesno', 'Will other people be with you during this activity?', {
+      activityBanner:label,
+      followupYes: [ q('else_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
+    }),
+    q('else_likely_'+iid, 'slider', 'How likely are you to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('else_toldBy_'+iid, 'yesno', 'Did someone else tell you to do this?', {
+      activityBanner:label,
+      followupYes: [ q('else_toldByWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
+    }),
   ]);
-}
-function blockerActivityBlock(label, iid){
-  return [ q('wanted_blocker_'+iid, 'single', 'What do you think stood in your way?', { choices: NOT_DONE_REASONS, activityBanner:label }) ];
 }
 
 function computeFollowups(question){
@@ -1070,21 +1243,23 @@ function computeFollowups(question){
   if(question.followupYes && ans==='Yes') list = question.followupYes;
   else if(question.followupNo && ans==='No') list = question.followupNo;
   else if(question.followupFor && ans===question.followupFor) list = question.followup;
+  else if(question.branches && question.branches[ans]) list = question.branches[ans];
 
   if(question.expandMode){
     const items = ans || [];
-    // Chunk all questions for one activity together; only the order
-    // *within* each activity's chunk is randomized, plus the order of
-    // the chunks themselves — never interleaved across activities.
+    // Chunk all questions for one activity together. For 'prospective' the
+    // whole block stays in fixed order (no shuffling at all); other modes
+    // randomize both within each activity's chunk and the chunk order.
     let blocks = items.map(item=>{
       const label = activityLabel(item, survey.answers, question.id);
       const iid = item.key;
       if(question.expandMode === 'prospective') return prospectiveActivityBlock(label, iid);
       if(question.expandMode === 'retroExtra') return retroExtraActivityBlock(label, iid);
-      if(question.expandMode === 'blocker') return blockerActivityBlock(label, iid);
       return [];
     });
-    blocks = shuffled(blocks);
+    if(question.expandMode !== 'prospective'){
+      blocks = shuffled(blocks);
+    }
     list = [...list, ...blocks.flat()];
   }
   return list;
@@ -1150,15 +1325,18 @@ function activityVerb(item, answers, prefix){
 function finishSurvey(){
   const beepIdx = survey.beepIndex;
 
-  // Resolve retrospective items: remove from pendingActivities if completed ('Yes'),
-  // keep if not ('No') so they're asked again at the next beep.
+  // Resolve retrospective items based on the 3-way status: completed always
+  // resolves it; 'No' or 'Initiated' only stay pending if the person says
+  // they'll initiate/complete it later today — otherwise it's dropped.
   if(survey.type==='beep'){
     (STATE.day.pendingActivities || []).forEach(item=>{
-      const ans = survey.answers['retro_did_'+item.id];
-      if(ans === 'Yes'){
+      const status = survey.answers['retro_status_'+item.id];
+      if(status === 'I completed the activity'){
         item._resolved = true;
-      } else if(ans === 'No'){
-        item.reasonAsked = true;
+      } else if(status === 'No'){
+        if(survey.answers['retro_initLater_'+item.id] !== 'Yes') item._resolved = true;
+      } else if(status === 'I initiated the activity, but did not complete it'){
+        if(survey.answers['retro_completeLater_'+item.id] !== 'Yes') item._resolved = true;
       }
     });
     STATE.day.pendingActivities = (STATE.day.pendingActivities || []).filter(item=>!item._resolved);
@@ -1203,11 +1381,83 @@ function finishSurvey(){
     if(!STATE.day.beepsDone.includes(idx)) STATE.day.beepsDone.push(idx);
   }
   saveState();
+  const wasEvening = survey.type === 'evening';
   document.getElementById('surveyLayer').classList.remove('open');
   survey = null;
   renderHome();
-  toast('Saved — thank you');
+  if(wasEvening){
+    showDaySummary();
+  } else {
+    toast('Saved — thank you');
+  }
 }
+
+/* ---------------- Day summary (shown after the evening check-in) ---------------- */
+function moodEmoji(val){
+  if(val===undefined || val===null || isNaN(val)) return null;
+  if(val < 20) return '😞';
+  if(val < 40) return '🙁';
+  if(val < 60) return '😐';
+  if(val < 80) return '🙂';
+  return '😄';
+}
+function computeDaySummary(){
+  const date = STATE.day.date;
+  const todays = STATE.entries.filter(e=>e.date===date);
+  const totalCheckins = 1 + BEEPS_PER_DAY + 1;
+  const completed = todays.filter(e=>e.type==='morning' || e.type==='beep' || e.type==='evening').length;
+
+  const moodSeries = [];
+  const morningE = todays.find(e=>e.type==='morning');
+  if(morningE && morningE.mood !== undefined) moodSeries.push({ label:'AM', val:Number(morningE.mood) });
+  const beepEs = todays.filter(e=>e.type==='beep').sort((a,b)=>(a.tag||'').localeCompare(b.tag||'', undefined, {numeric:true}));
+  beepEs.forEach((e,i)=>{ if(e.mood_beep !== undefined) moodSeries.push({ label:String(i+1), val:Number(e.mood_beep) }); });
+  const eveningE = todays.find(e=>e.type==='evening');
+  if(eveningE && eveningE.mood_evening !== undefined) moodSeries.push({ label:'PM', val:Number(eveningE.mood_evening) });
+
+  const validMoods = moodSeries.filter(m=>!isNaN(m.val));
+  const avgMood = validMoods.length ? Math.round(validMoods.reduce((s,m)=>s+m.val,0)/validMoods.length) : null;
+
+  const activityCounts = {};
+  beepEs.forEach(e=>{
+    ['nextActivity','elseActivity'].forEach(key=>{
+      if(e[key]) String(e[key]).split(';').map(s=>s.trim()).filter(Boolean).forEach(a=>{
+        activityCounts[a] = (activityCounts[a]||0) + 1;
+      });
+    });
+  });
+  const topActivity = Object.entries(activityCounts).sort((a,b)=>b[1]-a[1])[0] || null;
+
+  return { completed, totalCheckins, moodSeries, avgMood, topActivity };
+}
+function showDaySummary(){
+  const s = computeDaySummary();
+  let headline = 'Thanks for checking in today 💛';
+  if(s.completed === s.totalCheckins) headline = 'Perfect day! 🎉';
+  else if(s.completed >= s.totalCheckins - 2) headline = 'Great job today! 👏';
+
+  const moodRow = s.moodSeries.map(m=>{
+    const emo = moodEmoji(m.val);
+    return `<div class="mood-chip"><div class="mood-emoji">${emo || '·'}</div><div class="mood-label">${escHtml(m.label)}</div></div>`;
+  }).join('');
+
+  const stats = [];
+  stats.push(`<div class="summary-stat">✅ ${s.completed} of ${s.totalCheckins} check-ins completed</div>`);
+  if(s.avgMood !== null) stats.push(`<div class="summary-stat">${moodEmoji(s.avgMood)} Average mood today: ${s.avgMood}%</div>`);
+  if(s.topActivity) stats.push(`<div class="summary-stat">⭐ Most logged activity: ${escHtml(s.topActivity[0])} (${s.topActivity[1]}×)</div>`);
+
+  document.getElementById('daySummaryBody').innerHTML = `
+    <div class="summary-headline">${headline}</div>
+    <div class="summary-sub">Here's your day at a glance</div>
+    ${s.moodSeries.length ? `<div class="mood-row">${moodRow}</div>` : ''}
+    ${stats.join('')}
+  `;
+  document.getElementById('daySummaryLayer').classList.add('open');
+}
+document.getElementById('daySummaryClose').onclick = ()=>{
+  document.getElementById('daySummaryLayer').classList.remove('open');
+  toast('Saved — thank you');
+};
 
 function flattenAnswers(ans){
   const out = {};
@@ -1300,18 +1550,34 @@ document.getElementById('btnSaveNote').onclick = ()=>{
 };
 
 /* ---------------- Settings ---------------- */
+// PD/medication toggles are held as pending local choices, only written into
+// STATE at Save time — this way, canceling the "are you sure" confirmation
+// (or just closing without saving) never leaves STATE modified mid-session.
+let pendingHasParkinsons = null;
+let pendingTakesMedication = null;
+
 function updatePdToggle(){
-  document.getElementById('setPdYes').classList.toggle('active', STATE.settings.hasParkinsons === true);
-  document.getElementById('setPdNo').classList.toggle('active', STATE.settings.hasParkinsons === false);
+  document.getElementById('setPdYes').classList.toggle('active', pendingHasParkinsons === true);
+  document.getElementById('setPdNo').classList.toggle('active', pendingHasParkinsons === false);
+}
+function updateMedToggle(){
+  document.getElementById('setMedYes').classList.toggle('active', pendingTakesMedication === true);
+  document.getElementById('setMedNo').classList.toggle('active', pendingTakesMedication === false);
 }
 function openSettings(){
   document.getElementById('setParticipantId').value = STATE.settings.participantId || '';
-  document.getElementById('setWakeTime').value = STATE.settings.wakeStart || WAKE_START_DEFAULT;
-  document.getElementById('setBedTime').value = STATE.settings.wakeEnd || WAKE_END_DEFAULT;
+  document.getElementById('setWakeEarliest').value = STATE.settings.wakeEarliest || WAKE_EARLIEST_DEFAULT;
+  document.getElementById('setWakeLatest').value = STATE.settings.wakeLatest || WAKE_LATEST_DEFAULT;
+  document.getElementById('setBedEarliest').value = STATE.settings.bedEarliest || BED_EARLIEST_DEFAULT;
+  document.getElementById('setBedLatest').value = STATE.settings.bedLatest || BED_LATEST_DEFAULT;
   document.getElementById('setPilotMode').checked = !!STATE.settings.pilotMode;
+  document.getElementById('pilotPasswordRow').style.display = 'none';
   document.getElementById('setResearcherEmail').value = STATE.settings.researcherEmail || '';
   document.getElementById('setNtfyTopic').value = STATE.settings.ntfyTopic || '';
+  pendingHasParkinsons = STATE.settings.hasParkinsons;
+  pendingTakesMedication = STATE.settings.takesMedication;
   updatePdToggle();
+  updateMedToggle();
   document.getElementById('settingsLayer').classList.add('open');
 }
 document.getElementById('btnSettings').onclick = openSettings;
@@ -1322,41 +1588,105 @@ document.getElementById('btnCopyTopic').onclick = async ()=>{
   catch(e){ toast('Copy failed — select and copy manually'); }
 };
 
-document.getElementById('setPdYes').onclick = ()=>{ STATE.settings.hasParkinsons = true; updatePdToggle(); };
-document.getElementById('setPdNo').onclick = ()=>{ STATE.settings.hasParkinsons = false; updatePdToggle(); };
+document.getElementById('setPdYes').onclick = ()=>{ pendingHasParkinsons = true; updatePdToggle(); };
+document.getElementById('setPdNo').onclick = ()=>{ pendingHasParkinsons = false; updatePdToggle(); };
+document.getElementById('setMedYes').onclick = ()=>{ pendingTakesMedication = true; updateMedToggle(); };
+document.getElementById('setMedNo').onclick = ()=>{ pendingTakesMedication = false; updateMedToggle(); };
 
 document.getElementById('setEnableNotif').onclick = async ()=>{
   const granted = await requestNotifPermission();
   toast(granted ? 'Notifications enabled' : 'Notifications not enabled');
 };
 
+// Pilot mode requires a password, entered via an inline field rather than
+// window.prompt() — prompt() is unreliable inside an installed standalone
+// PWA on Android and can silently return null, which made the checkbox
+// look like it wasn't clickable at all. The checkbox itself isn't written
+// to STATE until Save, so canceling here never actually enables it.
+document.getElementById('setPilotMode').addEventListener('change', (e)=>{
+  const row = document.getElementById('pilotPasswordRow');
+  if(e.target.checked && !STATE.settings.pilotMode){
+    e.target.checked = false; // stays unchecked until the password is confirmed
+    row.style.display = 'flex';
+    const input = document.getElementById('pilotPasswordInput');
+    input.value = '';
+    input.focus();
+  } else {
+    row.style.display = 'none';
+  }
+});
+document.getElementById('pilotPasswordConfirm').onclick = ()=>{
+  const pwd = document.getElementById('pilotPasswordInput').value;
+  if(pwd.trim().toLowerCase() !== 'ema'){
+    toast('Incorrect password');
+    return;
+  }
+  const ok = confirm('Are you sure you want to enable pilot mode? Time windows will not be enforced.');
+  if(ok){
+    document.getElementById('setPilotMode').checked = true;
+    document.getElementById('pilotPasswordRow').style.display = 'none';
+  }
+};
+
 document.getElementById('settingsSave').onclick = ()=>{
   const pid = document.getElementById('setParticipantId').value.trim();
-  const wake = document.getElementById('setWakeTime').value;
-  const bed = document.getElementById('setBedTime').value;
+  const wakeEarliest = document.getElementById('setWakeEarliest').value;
+  const wakeLatest = document.getElementById('setWakeLatest').value;
+  const bedEarliest = document.getElementById('setBedEarliest').value;
+  const bedLatest = document.getElementById('setBedLatest').value;
   const pilotChecked = document.getElementById('setPilotMode').checked;
   const ntfyTopic = document.getElementById('setNtfyTopic').value.trim();
+  const researcherEmail = document.getElementById('setResearcherEmail').value.trim();
+
   if(!pid){ toast('Please enter your participant ID'); return; }
-  if(STATE.settings.hasParkinsons !== true && STATE.settings.hasParkinsons !== false){ toast("Please answer the Parkinson's question"); return; }
-  if(!wake || !bed){ toast('Please set both wake and bed times'); return; }
-  if(pilotChecked && !STATE.settings.pilotMode){
-    const ok = confirm('You are on pilot mode. You wanna continue?');
-    if(!ok){ document.getElementById('setPilotMode').checked = false; return; }
+  if(pendingHasParkinsons !== true && pendingHasParkinsons !== false){ toast("Please answer the Parkinson's question"); return; }
+  if(pendingTakesMedication !== true && pendingTakesMedication !== false){ toast('Please answer the medication question'); return; }
+  if(!wakeEarliest || !wakeLatest || !bedEarliest || !bedLatest){ toast('Please set your wake and sleep time ranges'); return; }
+  if(toMin(wakeLatest) < toMin(wakeEarliest)){ toast('Latest wake time must be after the earliest'); return; }
+  if(toMin(bedLatest) < toMin(bedEarliest)){ toast('Latest bedtime must be after the earliest'); return; }
+
+  const changed = STATE.onboarded && (
+    pid !== STATE.settings.participantId ||
+    pendingHasParkinsons !== STATE.settings.hasParkinsons ||
+    pendingTakesMedication !== STATE.settings.takesMedication ||
+    wakeEarliest !== STATE.settings.wakeEarliest || wakeLatest !== STATE.settings.wakeLatest ||
+    bedEarliest !== STATE.settings.bedEarliest || bedLatest !== STATE.settings.bedLatest ||
+    researcherEmail !== STATE.settings.researcherEmail ||
+    ntfyTopic !== STATE.settings.ntfyTopic
+    // pilotMode is intentionally excluded here — it already has its own
+    // dedicated password + confirmation flow at the moment it's toggled.
+  );
+  if(changed){
+    const ok = confirm('Are you sure you want to change this information?');
+    if(!ok) return;
   }
-  const wakeOrBedChanged = (wake !== STATE.settings.wakeStart) || (bed !== STATE.settings.wakeEnd);
-  const topicChanged = ntfyTopic !== STATE.settings.ntfyTopic;
+
+  const scheduleAffectingChange = (wakeEarliest !== STATE.settings.wakeEarliest) || (wakeLatest !== STATE.settings.wakeLatest) ||
+    (bedEarliest !== STATE.settings.bedEarliest) || (bedLatest !== STATE.settings.bedLatest) ||
+    (ntfyTopic !== STATE.settings.ntfyTopic);
+
   STATE.settings.participantId = pid;
-  STATE.settings.wakeStart = wake;
-  STATE.settings.wakeEnd = bed;
+  STATE.settings.hasParkinsons = pendingHasParkinsons;
+  STATE.settings.takesMedication = pendingTakesMedication;
+  STATE.settings.wakeEarliest = wakeEarliest;
+  STATE.settings.wakeLatest = wakeLatest;
+  STATE.settings.bedEarliest = bedEarliest;
+  STATE.settings.bedLatest = bedLatest;
   STATE.settings.pilotMode = pilotChecked;
-  STATE.settings.researcherEmail = document.getElementById('setResearcherEmail').value.trim();
+  STATE.settings.researcherEmail = researcherEmail;
   STATE.settings.ntfyTopic = ntfyTopic || STATE.settings.ntfyTopic;
+  STATE.onboarded = true;
   saveState();
   ensureToday();
   STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
-  if(wakeOrBedChanged || topicChanged) STATE.day.ntfyScheduledFor = null; // re-push with new times/topic
+  if(scheduleAffectingChange){
+    // Old cached future days no longer match the new settings — clear them
+    // and re-push from today forward.
+    STATE.futureSchedules = {};
+    STATE.ntfyScheduledThrough = null;
+  }
   saveState();
-  scheduleNtfyToday();
+  scheduleNtfyUpcoming();
   document.getElementById('settingsLayer').classList.remove('open');
   renderHome();
   toast('Settings saved');
@@ -1368,11 +1698,19 @@ document.getElementById('settingsSave').onclick = ()=>{
 };
 
 document.getElementById('settingsClose').onclick = ()=>{
-  if(!STATE.settings.participantId){
+  if(!STATE.onboarded){
     toast('Please complete setup first');
     return;
   }
   document.getElementById('settingsLayer').classList.remove('open');
+};
+
+/* ---------------- Instructions ---------------- */
+document.getElementById('btnInstructions').onclick = ()=>{
+  document.getElementById('instructionsLayer').classList.add('open');
+};
+document.getElementById('instructionsClose').onclick = ()=>{
+  document.getElementById('instructionsLayer').classList.remove('open');
 };
 
 /* ---------------- Toast ---------------- */
@@ -1397,7 +1735,7 @@ function toast(msg){
     history.replaceState({}, '', location.pathname); // strip ?open= so a later refresh doesn't reopen it
   }
 
-  if(!STATE.settings.participantId){
+  if(!STATE.onboarded){
     openSettings();
     return; // wait for onboarding to complete before offering notifications
   }
