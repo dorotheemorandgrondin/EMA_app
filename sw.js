@@ -1,4 +1,4 @@
-const CACHE = 'daily-rhythm-v1';
+const CACHE = 'daily-rhythm-v2';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -15,9 +15,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Network-first: always try to fetch the latest version first, so updates
+// pushed to GitHub Pages show up on the next load. Only fall back to the
+// cached copy if the network request fails (genuinely offline) — this is
+// the opposite of caching the first version forever.
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request, { cache: 'no-store' })
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 

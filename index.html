@@ -157,6 +157,10 @@
 
   #settingsLayer{ position:fixed; inset:0; background:var(--paper); z-index:51; display:none; flex-direction:column; }
   #settingsLayer.open{ display:flex; }
+  #onboardLayer{ position:fixed; inset:0; background:var(--paper); z-index:54; display:none; flex-direction:column; }
+  #onboardLayer.open{ display:flex; }
+  .onboard-page{ display:none; }
+  .onboard-page.active{ display:block; }
   #instructionsLayer{ position:fixed; inset:0; background:var(--paper); z-index:52; display:none; flex-direction:column; }
   #instructionsLayer.open{ display:flex; }
   #daySummaryLayer{ position:fixed; inset:0; background:linear-gradient(180deg, #FFF6E0, var(--paper) 55%); z-index:53; display:none; flex-direction:column; }
@@ -267,17 +271,12 @@
       <div class="settings-hint">Your evening check-in window runs from 30 minutes before the earliest time up to the latest time. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
     </div>
     <div class="settings-field">
-      <label>Reliable notifications (recommended)</label>
+      <label>Reliable notifications</label>
+      <div class="settings-hint" style="margin-bottom:6px;">Your code — if you ever need to reinstall the ntfy app, paste this exact code back in as the topic. See Instructions for the full walkthrough.</div>
       <div style="display:flex; gap:8px;">
-        <input type="text" id="setNtfyTopic" style="flex:1;" />
+        <input type="text" id="setNtfyTopic" readonly style="flex:1; font-family:'SFMono-Regular',Consolas,monospace; background:var(--paper-2);" />
         <button class="btn ghost small" id="btnCopyTopic" type="button">Copy</button>
       </div>
-      <div class="settings-hint">1) Install the free <b>ntfy</b> app from the Play Store. 2) Open it, tap "+", and subscribe to the exact topic name above. This delivers your reminders through ntfy's own app, reliably, even if this app or Chrome is fully closed.</div>
-    </div>
-    <div class="settings-field">
-      <label>Researcher email (optional)</label>
-      <input type="email" id="setResearcherEmail" placeholder="researcher@university.edu" />
-      <div class="settings-hint">Used to pre-address the export email, if you use that option.</div>
     </div>
     <button class="btn ghost" id="setEnableNotif" style="width:100%; margin-top:8px;">Also enable in-app notifications</button>
     <div class="pilot-row">
@@ -292,6 +291,121 @@
   </div>
   <div class="survey-foot">
     <button class="btn" id="settingsSave" style="flex:1;">Save</button>
+  </div>
+</div>
+
+<div id="onboardLayer">
+  <div class="survey-head">
+    <div class="survey-progress"><div id="onboardProgressBar" style="width:0%"></div></div>
+  </div>
+  <div class="survey-body" id="onboardBody" style="padding-top:22px;">
+
+    <div class="onboard-page active" data-page="0">
+      <div class="settings-field">
+        <label>Participant ID</label>
+        <input type="text" id="obParticipantId" placeholder="As given by your researcher" />
+      </div>
+      <div class="settings-field">
+        <label>Do you have Parkinson's disease?</label>
+        <div class="toggle-row">
+          <button class="btn ghost toggle-btn" id="obPdYes" data-val="yes">Yes</button>
+          <button class="btn ghost toggle-btn" id="obPdNo" data-val="no">No</button>
+        </div>
+      </div>
+      <div class="settings-field">
+        <label>Do you take dopaminergic medication?</label>
+        <div class="toggle-row">
+          <button class="btn ghost toggle-btn" id="obMedYes" data-val="yes">Yes</button>
+          <button class="btn ghost toggle-btn" id="obMedNo" data-val="no">No</button>
+        </div>
+      </div>
+      <div class="settings-field">
+        <label>What time do you usually wake up? (earliest — latest)</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="time" id="obWakeEarliest" style="flex:1;" />
+          <span>—</span>
+          <input type="time" id="obWakeLatest" style="flex:1;" />
+        </div>
+      </div>
+      <div class="settings-field">
+        <label>What time do you usually go to sleep? (earliest — latest)</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="time" id="obBedEarliest" style="flex:1;" />
+          <span>—</span>
+          <input type="time" id="obBedLatest" style="flex:1;" />
+        </div>
+      </div>
+      <div class="pilot-row">
+        <input type="checkbox" id="obPilotMode" />
+        <label for="obPilotMode">Pilot / test mode</label>
+      </div>
+      <div class="settings-hint" style="margin-top:2px;">Requires a password. Only for testing — leave this off otherwise.</div>
+      <div id="obPilotPasswordRow" style="display:none; gap:8px; margin-top:8px;">
+        <input type="password" id="obPilotPasswordInput" placeholder="Password" style="flex:1;" />
+        <button class="btn small" id="obPilotPasswordConfirm" type="button">Confirm</button>
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="1" style="text-align:center; padding-top:30px;">
+      <div class="summary-headline" style="font-size:22px;">One more step</div>
+      <div class="settings-hint" style="font-size:15.5px; line-height:1.7; max-width:320px; margin:0 auto;">
+        To complete this study, you need to enable notifications — they tell you exactly when each check-in is open.<br><br>
+        It only takes a couple of minutes. We'll go through it together, one step at a time.
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="2">
+      <div class="settings-field">
+        <label>Step 1 of 4 — Install the ntfy app</label>
+        <div class="settings-hint" style="font-size:15px; line-height:1.7;">
+          This is a free, separate app whose only job is delivering your reminders — it keeps working even when Daily Rhythm is fully closed.<br><br>
+          Open the Play Store on your phone and search for <b>ntfy</b> (by heckel.io). Install it, then come back to this screen.
+        </div>
+        <a class="btn ghost" style="display:block; text-align:center; margin-top:12px; text-decoration:none;" href="https://play.google.com/store/search?q=ntfy&c=apps" target="_blank" rel="noopener">Open Play Store</a>
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="3">
+      <div class="settings-field">
+        <label>Step 2 of 4 — Your unique code</label>
+        <div class="settings-hint" style="font-size:15px; line-height:1.6;">This code belongs only to you. Tap Copy, then move to the next step.</div>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <input type="text" id="obNtfyTopic" readonly style="flex:1; font-family:'SFMono-Regular',Consolas,monospace; background:var(--paper-2); font-size:16px;" />
+          <button class="btn ghost small" id="obCopyTopic" type="button">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="4">
+      <div class="settings-field">
+        <label>Step 3 of 4 — Add your code to ntfy</label>
+        <div class="settings-hint" style="font-size:15px; line-height:2;">
+          1. Open the <b>ntfy</b> app.<br>
+          2. Tap the <b>+</b> button.<br>
+          3. Tap the topic box, press and hold, then choose <b>Paste</b>.<br>
+          4. Tap <b>Subscribe</b> (or Confirm).
+        </div>
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="5" style="text-align:center;">
+      <div class="settings-field">
+        <label>Step 4 of 4 — Test it</label>
+        <div class="settings-hint" style="font-size:15px;">Tap the button below. A notification should arrive on your phone within a few seconds.</div>
+        <button class="btn" id="obSendTest" style="width:100%; margin-top:12px;">Send test notification</button>
+        <div class="settings-hint" id="obTestStatus" style="margin-top:10px; font-weight:600;"></div>
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="6" style="text-align:center; padding-top:30px;">
+      <div class="summary-headline" style="font-size:24px;">You're all set! 🎉</div>
+      <div class="settings-hint" style="font-size:15.5px;">Tap Finish to start using the app.</div>
+    </div>
+
+  </div>
+  <div class="survey-foot">
+    <button class="btn ghost" id="onboardBack">Back</button>
+    <button class="btn" id="onboardNext">Next</button>
   </div>
 </div>
 
@@ -312,7 +426,7 @@
     <div class="settings-field">
       <label>Notifications</label>
       <div class="settings-hint" style="font-size:14px; line-height:1.55;">
-        For reliable reminders, install the free <b>ntfy</b> app from the Play Store, open it, tap "+", and subscribe to the topic name shown in Settings under "Reliable notifications." That's the whole setup — after that, ntfy delivers each reminder on its own, even if this app or Chrome is fully closed.<br><br>
+        For reliable reminders, install the free <b>ntfy</b> app from the Play Store, open it, tap "+", and paste in the topic code shown in Settings (a short code like <i>dailyrhythm-ab12cd</i> — tap Copy next to it, don't type the words "Reliable notifications"). That's the whole setup — after that, ntfy delivers each reminder on its own, even if this app or Chrome is fully closed.<br><br>
         Tapping a notification opens this app directly into the right questionnaire.
       </div>
     </div>
@@ -1218,6 +1332,15 @@ function prospectiveActivityBlock(label, iid){
     q('act_effortful_future_'+iid, 'slider', 'How effortful do you think this activity will feel?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_enjoyable_future_'+iid, 'slider', 'How enjoyable do you think this activity will feel?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_should_'+iid, 'slider', 'How much do you think you should do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_othersPresent_'+iid, 'yesno', 'Will other people be with you during this activity?', {
+      activityBanner:label,
+      followupYes: [ q('act_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
+    }),
+    q('act_likely_'+iid, 'slider', 'How likely are you to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_toldBy_'+iid, 'yesno', 'Did someone else tell you to do this?', {
+      activityBanner:label,
+      followupYes: [ q('act_toldByWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
+    }),
   ];
 }
 function retroExtraActivityBlock(label, iid){
@@ -1514,7 +1637,7 @@ async function exportCSV(){
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 
-  const to = STATE.settings.researcherEmail || '';
+  const to = RESEARCHER_EMAIL_DEFAULT;
   const subject = encodeURIComponent(`EMA export — participant ${STATE.settings.participantId || ''}`);
   const body = encodeURIComponent(`The file "${filename}" was just downloaded to this phone — please attach it to this email before sending.`);
   setTimeout(()=>{
@@ -1551,19 +1674,58 @@ document.getElementById('btnSaveNote').onclick = ()=>{
 
 /* ---------------- Settings ---------------- */
 // PD/medication toggles are held as pending local choices, only written into
-// STATE at Save time — this way, canceling the "are you sure" confirmation
-// (or just closing without saving) never leaves STATE modified mid-session.
+// STATE at Save/Finish time — this way, canceling the "are you sure"
+// confirmation (or just closing without saving) never leaves STATE modified
+// mid-session. The same pending state and toggle buttons are shared between
+// the ongoing Settings screen and the first-time onboarding wizard (only one
+// of the two is ever open at once).
 let pendingHasParkinsons = null;
 let pendingTakesMedication = null;
 
 function updatePdToggle(){
-  document.getElementById('setPdYes').classList.toggle('active', pendingHasParkinsons === true);
-  document.getElementById('setPdNo').classList.toggle('active', pendingHasParkinsons === false);
+  ['setPdYes','obPdYes'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingHasParkinsons === true));
+  ['setPdNo','obPdNo'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingHasParkinsons === false));
 }
 function updateMedToggle(){
-  document.getElementById('setMedYes').classList.toggle('active', pendingTakesMedication === true);
-  document.getElementById('setMedNo').classList.toggle('active', pendingTakesMedication === false);
+  ['setMedYes','obMedYes'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingTakesMedication === true));
+  ['setMedNo','obMedNo'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingTakesMedication === false));
 }
+document.getElementById('setPdYes').onclick = ()=>{ pendingHasParkinsons = true; updatePdToggle(); };
+document.getElementById('setPdNo').onclick = ()=>{ pendingHasParkinsons = false; updatePdToggle(); };
+document.getElementById('obPdYes').onclick = ()=>{ pendingHasParkinsons = true; updatePdToggle(); };
+document.getElementById('obPdNo').onclick = ()=>{ pendingHasParkinsons = false; updatePdToggle(); };
+document.getElementById('setMedYes').onclick = ()=>{ pendingTakesMedication = true; updateMedToggle(); };
+document.getElementById('setMedNo').onclick = ()=>{ pendingTakesMedication = false; updateMedToggle(); };
+document.getElementById('obMedYes').onclick = ()=>{ pendingTakesMedication = true; updateMedToggle(); };
+document.getElementById('obMedNo').onclick = ()=>{ pendingTakesMedication = false; updateMedToggle(); };
+
+// Generic inline pilot-mode password gate, reused by both screens.
+function wirePilotPassword(checkboxId, rowId, inputId, confirmId){
+  document.getElementById(checkboxId).addEventListener('change', (e)=>{
+    const row = document.getElementById(rowId);
+    if(e.target.checked && !STATE.settings.pilotMode){
+      e.target.checked = false; // stays unchecked until the password is confirmed
+      row.style.display = 'flex';
+      const input = document.getElementById(inputId);
+      input.value = '';
+      input.focus();
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  document.getElementById(confirmId).onclick = ()=>{
+    const pwd = document.getElementById(inputId).value;
+    if(pwd.trim().toLowerCase() !== 'ema'){ toast('Incorrect password'); return; }
+    const ok = confirm('Are you sure you want to enable pilot mode? Time windows will not be enforced.');
+    if(ok){
+      document.getElementById(checkboxId).checked = true;
+      document.getElementById(rowId).style.display = 'none';
+    }
+  };
+}
+wirePilotPassword('setPilotMode', 'pilotPasswordRow', 'pilotPasswordInput', 'pilotPasswordConfirm');
+wirePilotPassword('obPilotMode', 'obPilotPasswordRow', 'obPilotPasswordInput', 'obPilotPasswordConfirm');
+
 function openSettings(){
   document.getElementById('setParticipantId').value = STATE.settings.participantId || '';
   document.getElementById('setWakeEarliest').value = STATE.settings.wakeEarliest || WAKE_EARLIEST_DEFAULT;
@@ -1572,7 +1734,6 @@ function openSettings(){
   document.getElementById('setBedLatest').value = STATE.settings.bedLatest || BED_LATEST_DEFAULT;
   document.getElementById('setPilotMode').checked = !!STATE.settings.pilotMode;
   document.getElementById('pilotPasswordRow').style.display = 'none';
-  document.getElementById('setResearcherEmail').value = STATE.settings.researcherEmail || '';
   document.getElementById('setNtfyTopic').value = STATE.settings.ntfyTopic || '';
   pendingHasParkinsons = STATE.settings.hasParkinsons;
   pendingTakesMedication = STATE.settings.takesMedication;
@@ -1588,44 +1749,9 @@ document.getElementById('btnCopyTopic').onclick = async ()=>{
   catch(e){ toast('Copy failed — select and copy manually'); }
 };
 
-document.getElementById('setPdYes').onclick = ()=>{ pendingHasParkinsons = true; updatePdToggle(); };
-document.getElementById('setPdNo').onclick = ()=>{ pendingHasParkinsons = false; updatePdToggle(); };
-document.getElementById('setMedYes').onclick = ()=>{ pendingTakesMedication = true; updateMedToggle(); };
-document.getElementById('setMedNo').onclick = ()=>{ pendingTakesMedication = false; updateMedToggle(); };
-
 document.getElementById('setEnableNotif').onclick = async ()=>{
   const granted = await requestNotifPermission();
   toast(granted ? 'Notifications enabled' : 'Notifications not enabled');
-};
-
-// Pilot mode requires a password, entered via an inline field rather than
-// window.prompt() — prompt() is unreliable inside an installed standalone
-// PWA on Android and can silently return null, which made the checkbox
-// look like it wasn't clickable at all. The checkbox itself isn't written
-// to STATE until Save, so canceling here never actually enables it.
-document.getElementById('setPilotMode').addEventListener('change', (e)=>{
-  const row = document.getElementById('pilotPasswordRow');
-  if(e.target.checked && !STATE.settings.pilotMode){
-    e.target.checked = false; // stays unchecked until the password is confirmed
-    row.style.display = 'flex';
-    const input = document.getElementById('pilotPasswordInput');
-    input.value = '';
-    input.focus();
-  } else {
-    row.style.display = 'none';
-  }
-});
-document.getElementById('pilotPasswordConfirm').onclick = ()=>{
-  const pwd = document.getElementById('pilotPasswordInput').value;
-  if(pwd.trim().toLowerCase() !== 'ema'){
-    toast('Incorrect password');
-    return;
-  }
-  const ok = confirm('Are you sure you want to enable pilot mode? Time windows will not be enforced.');
-  if(ok){
-    document.getElementById('setPilotMode').checked = true;
-    document.getElementById('pilotPasswordRow').style.display = 'none';
-  }
 };
 
 document.getElementById('settingsSave').onclick = ()=>{
@@ -1636,7 +1762,6 @@ document.getElementById('settingsSave').onclick = ()=>{
   const bedLatest = document.getElementById('setBedLatest').value;
   const pilotChecked = document.getElementById('setPilotMode').checked;
   const ntfyTopic = document.getElementById('setNtfyTopic').value.trim();
-  const researcherEmail = document.getElementById('setResearcherEmail').value.trim();
 
   if(!pid){ toast('Please enter your participant ID'); return; }
   if(pendingHasParkinsons !== true && pendingHasParkinsons !== false){ toast("Please answer the Parkinson's question"); return; }
@@ -1645,14 +1770,12 @@ document.getElementById('settingsSave').onclick = ()=>{
   if(toMin(wakeLatest) < toMin(wakeEarliest)){ toast('Latest wake time must be after the earliest'); return; }
   if(toMin(bedLatest) < toMin(bedEarliest)){ toast('Latest bedtime must be after the earliest'); return; }
 
-  const changed = STATE.onboarded && (
+  const changed = (
     pid !== STATE.settings.participantId ||
     pendingHasParkinsons !== STATE.settings.hasParkinsons ||
     pendingTakesMedication !== STATE.settings.takesMedication ||
     wakeEarliest !== STATE.settings.wakeEarliest || wakeLatest !== STATE.settings.wakeLatest ||
-    bedEarliest !== STATE.settings.bedEarliest || bedLatest !== STATE.settings.bedLatest ||
-    researcherEmail !== STATE.settings.researcherEmail ||
-    ntfyTopic !== STATE.settings.ntfyTopic
+    bedEarliest !== STATE.settings.bedEarliest || bedLatest !== STATE.settings.bedLatest
     // pilotMode is intentionally excluded here — it already has its own
     // dedicated password + confirmation flow at the moment it's toggled.
   );
@@ -1662,8 +1785,7 @@ document.getElementById('settingsSave').onclick = ()=>{
   }
 
   const scheduleAffectingChange = (wakeEarliest !== STATE.settings.wakeEarliest) || (wakeLatest !== STATE.settings.wakeLatest) ||
-    (bedEarliest !== STATE.settings.bedEarliest) || (bedLatest !== STATE.settings.bedLatest) ||
-    (ntfyTopic !== STATE.settings.ntfyTopic);
+    (bedEarliest !== STATE.settings.bedEarliest) || (bedLatest !== STATE.settings.bedLatest);
 
   STATE.settings.participantId = pid;
   STATE.settings.hasParkinsons = pendingHasParkinsons;
@@ -1673,9 +1795,6 @@ document.getElementById('settingsSave').onclick = ()=>{
   STATE.settings.bedEarliest = bedEarliest;
   STATE.settings.bedLatest = bedLatest;
   STATE.settings.pilotMode = pilotChecked;
-  STATE.settings.researcherEmail = researcherEmail;
-  STATE.settings.ntfyTopic = ntfyTopic || STATE.settings.ntfyTopic;
-  STATE.onboarded = true;
   saveState();
   ensureToday();
   STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
@@ -1690,18 +1809,9 @@ document.getElementById('settingsSave').onclick = ()=>{
   document.getElementById('settingsLayer').classList.remove('open');
   renderHome();
   toast('Settings saved');
-  if('Notification' in window && Notification.permission === 'default'){
-    setTimeout(()=>{
-      if(confirm('Enable notifications for your 6 daily check-ins?')) requestNotifPermission();
-    }, 500);
-  }
 };
 
 document.getElementById('settingsClose').onclick = ()=>{
-  if(!STATE.onboarded){
-    toast('Please complete setup first');
-    return;
-  }
   document.getElementById('settingsLayer').classList.remove('open');
 };
 
@@ -1711,6 +1821,111 @@ document.getElementById('btnInstructions').onclick = ()=>{
 };
 document.getElementById('instructionsClose').onclick = ()=>{
   document.getElementById('instructionsLayer').classList.remove('open');
+};
+
+/* ---------------- First-time onboarding wizard ---------------- */
+const ONBOARD_PAGE_COUNT = 7;
+let onboardPos = 0;
+
+function openOnboarding(){
+  onboardPos = 0;
+  pendingHasParkinsons = STATE.settings.hasParkinsons;
+  pendingTakesMedication = STATE.settings.takesMedication;
+  document.getElementById('obParticipantId').value = STATE.settings.participantId || '';
+  document.getElementById('obWakeEarliest').value = STATE.settings.wakeEarliest || WAKE_EARLIEST_DEFAULT;
+  document.getElementById('obWakeLatest').value = STATE.settings.wakeLatest || WAKE_LATEST_DEFAULT;
+  document.getElementById('obBedEarliest').value = STATE.settings.bedEarliest || BED_EARLIEST_DEFAULT;
+  document.getElementById('obBedLatest').value = STATE.settings.bedLatest || BED_LATEST_DEFAULT;
+  document.getElementById('obPilotMode').checked = false;
+  document.getElementById('obPilotPasswordRow').style.display = 'none';
+  document.getElementById('obTestStatus').textContent = '';
+  updatePdToggle();
+  updateMedToggle();
+  renderOnboardStep();
+  document.getElementById('onboardLayer').classList.add('open');
+}
+
+function renderOnboardStep(){
+  document.querySelectorAll('.onboard-page').forEach(el=>{
+    el.classList.toggle('active', Number(el.dataset.page) === onboardPos);
+  });
+  document.getElementById('onboardBack').style.visibility = onboardPos === 0 ? 'hidden' : 'visible';
+  document.getElementById('onboardNext').textContent = onboardPos === ONBOARD_PAGE_COUNT - 1 ? 'Finish' : 'Next';
+  document.getElementById('onboardProgressBar').style.width = Math.round(((onboardPos+1)/ONBOARD_PAGE_COUNT)*100) + '%';
+  if(onboardPos === 3){
+    document.getElementById('obNtfyTopic').value = STATE.settings.ntfyTopic || '';
+  }
+  document.getElementById('onboardBody').scrollTop = 0;
+}
+
+function validateOnboardInfoPage(){
+  const pid = document.getElementById('obParticipantId').value.trim();
+  const wakeEarliest = document.getElementById('obWakeEarliest').value;
+  const wakeLatest = document.getElementById('obWakeLatest').value;
+  const bedEarliest = document.getElementById('obBedEarliest').value;
+  const bedLatest = document.getElementById('obBedLatest').value;
+  if(!pid){ toast('Please enter your participant ID'); return false; }
+  if(pendingHasParkinsons !== true && pendingHasParkinsons !== false){ toast("Please answer the Parkinson's question"); return false; }
+  if(pendingTakesMedication !== true && pendingTakesMedication !== false){ toast('Please answer the medication question'); return false; }
+  if(!wakeEarliest || !wakeLatest || !bedEarliest || !bedLatest){ toast('Please set your wake and sleep time ranges'); return false; }
+  if(toMin(wakeLatest) < toMin(wakeEarliest)){ toast('Latest wake time must be after the earliest'); return false; }
+  if(toMin(bedLatest) < toMin(bedEarliest)){ toast('Latest bedtime must be after the earliest'); return false; }
+  return true;
+}
+
+document.getElementById('obCopyTopic').onclick = async ()=>{
+  const val = document.getElementById('obNtfyTopic').value;
+  try{ await navigator.clipboard.writeText(val); toast('Copied'); }
+  catch(e){ toast('Copy failed — select and copy manually'); }
+};
+
+document.getElementById('obSendTest').onclick = async ()=>{
+  const statusEl = document.getElementById('obTestStatus');
+  if(!STATE.settings.ntfyTopic){ statusEl.textContent = 'No code found — go back and check the previous step.'; return; }
+  statusEl.textContent = 'Sending…';
+  try{
+    await fetch('https://ntfy.sh/' + encodeURIComponent(STATE.settings.ntfyTopic), {
+      method: 'POST',
+      headers: { 'Title': 'Test notification 🎉' },
+      body: 'If you see this, notifications are working!',
+    });
+    statusEl.textContent = 'Sent! Check your notifications in a few seconds.';
+  }catch(e){
+    statusEl.textContent = 'Could not send — check your internet connection and try again.';
+  }
+};
+
+function finishOnboarding(){
+  const pid = document.getElementById('obParticipantId').value.trim();
+  STATE.settings.participantId = pid;
+  STATE.settings.hasParkinsons = pendingHasParkinsons;
+  STATE.settings.takesMedication = pendingTakesMedication;
+  STATE.settings.wakeEarliest = document.getElementById('obWakeEarliest').value;
+  STATE.settings.wakeLatest = document.getElementById('obWakeLatest').value;
+  STATE.settings.bedEarliest = document.getElementById('obBedEarliest').value;
+  STATE.settings.bedLatest = document.getElementById('obBedLatest').value;
+  STATE.settings.pilotMode = document.getElementById('obPilotMode').checked;
+  STATE.onboarded = true;
+  saveState();
+  ensureToday();
+  STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
+  STATE.futureSchedules = {};
+  STATE.ntfyScheduledThrough = null;
+  saveState();
+  scheduleNtfyUpcoming();
+  document.getElementById('onboardLayer').classList.remove('open');
+  renderHome();
+  toast('All set — welcome!');
+}
+
+document.getElementById('onboardNext').onclick = ()=>{
+  if(onboardPos === 0 && !validateOnboardInfoPage()) return;
+  if(onboardPos === ONBOARD_PAGE_COUNT - 1){ finishOnboarding(); return; }
+  onboardPos++;
+  renderOnboardStep();
+};
+document.getElementById('onboardBack').onclick = ()=>{
+  if(onboardPos > 0){ onboardPos--; renderOnboardStep(); }
 };
 
 /* ---------------- Toast ---------------- */
@@ -1736,8 +1951,8 @@ function toast(msg){
   }
 
   if(!STATE.onboarded){
-    openSettings();
-    return; // wait for onboarding to complete before offering notifications
+    openOnboarding();
+    return;
   }
   if(openTag){
     openSurveyByTag(openTag);
