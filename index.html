@@ -400,7 +400,7 @@
         </div>
         <div id="obHelpBox" style="display:none; margin-top:16px; text-align:left; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px;">
           <div style="font-weight:700; margin-bottom:6px;">Let's get you help</div>
-          <div class="settings-hint" style="font-size:14px; margin-bottom:12px;">This can happen on some wifi networks — try switching to mobile data and testing again. If it still doesn't work, reach out and we'll help directly.</div>
+          <div class="settings-hint" style="font-size:14px; margin-bottom:12px;">If this doesn't work on either wifi or mobile data, check your phone's <b>Private DNS</b> setting (Settings → Network & Internet → Private DNS) — set it to "Automatic" or "Off" and try again. Otherwise, reach out and we'll help directly.</div>
           <a class="btn ghost" id="obWatchVideo" style="display:block; text-align:center; text-decoration:none; margin-bottom:8px;" href="#">Watch a video walkthrough</a>
           <a class="btn" id="obEmailHelp" style="display:block; text-align:center; text-decoration:none;" href="#">Email for help</a>
         </div>
@@ -644,29 +644,29 @@ function markNotified(tag){ notifiedTags.add(tag); localStorage.setItem('notifie
 
 function checkDueBeeps(){
   ensureToday();
-  // ntfy is the single source of truth for notifications when configured
-  // (the default) — this avoids firing the same reminder twice from two
-  // systems, and avoids a burst of 'catch-up' notifications for anything
-  // already past by the time the app is reopened.
-  if(!STATE.settings.ntfyTopic){
-    const nowMin = nowMinutes();
-    const mw = morningWindow();
-    if(!STATE.day.morningDone && nowMin >= mw.start && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
-      fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
-      markNotified('morning-'+STATE.day.date);
+  // Local notifications now run alongside ntfy (not only as a fallback) —
+  // ntfy can be blocked by some networks/devices, so this gives a second,
+  // independent path. It only fires while this app has been opened recently
+  // (a real limitation), but that's better than zero coverage if ntfy fails.
+  // Safe to run every time: 'notifiedTags' is stored in localStorage (not
+  // sessionStorage), so it won't re-fire the same reminder on every reopen.
+  const nowMin = nowMinutes();
+  const mw = morningWindow();
+  if(!STATE.day.morningDone && nowMin >= mw.start && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
+    fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
+    markNotified('morning-'+STATE.day.date);
+  }
+  STATE.schedule.times.forEach((t, idx)=>{
+    const tag = 'beep-'+idx+'-'+STATE.day.date;
+    if(beepStatus(idx) === 'available' && !notifiedTags.has(tag)){
+      fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
+      markNotified(tag);
     }
-    STATE.schedule.times.forEach((t, idx)=>{
-      const tag = 'beep-'+idx+'-'+STATE.day.date;
-      if(beepStatus(idx) === 'available' && !notifiedTags.has(tag)){
-        fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
-        markNotified(tag);
-      }
-    });
-    const ew = eveningWindow();
-    if(!STATE.day.eveningDone && nowMin >= ew.start && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
-      fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
-      markNotified('evening-'+STATE.day.date);
-    }
+  });
+  const ew = eveningWindow();
+  if(!STATE.day.eveningDone && nowMin >= ew.start && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
+    fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
+    markNotified('evening-'+STATE.day.date);
   }
   renderHome();
 }
@@ -734,14 +734,16 @@ async function scheduleNtfyUpcoming(){
       const deliverAt = dayMidnight.getTime() + p.mins*60000;
       if(deliverAt <= now + 60000) continue; // skip anything already past (only relevant to today)
       try{
-        await fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
+        await fetch('https://ntfy.sh/', {
           method: 'POST',
-          headers: {
-            'Title': p.title,
-            'Delay': String(Math.floor(deliverAt/1000)),
-            'Click': baseUrl + '?open=' + encodeURIComponent(p.tag),
-          },
-          body: p.body,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: topic,
+            title: p.title,
+            message: p.body,
+            delay: String(Math.floor(deliverAt/1000)),
+            click: baseUrl + '?open=' + encodeURIComponent(p.tag),
+          }),
         });
       }catch(e){
         dayOk = false; // network hiccup — stop here, retry from this day next time
@@ -1900,10 +1902,14 @@ document.getElementById('obSendTest').onclick = async ()=>{
   if(!STATE.settings.ntfyTopic){ statusEl.textContent = 'No code found — go back and check the previous step.'; return; }
   statusEl.textContent = 'Sending…';
   try{
-    const res = await fetch('https://ntfy.sh/' + encodeURIComponent(STATE.settings.ntfyTopic), {
+    const res = await fetch('https://ntfy.sh/', {
       method: 'POST',
-      headers: { 'Title': 'Test notification 🎉' },
-      body: 'If you see this, notifications are working!',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: STATE.settings.ntfyTopic,
+        title: 'Test notification 🎉',
+        message: 'If you see this, notifications are working!',
+      }),
     });
     if(!res.ok){
       statusEl.textContent = `The server reported a problem (error ${res.status}). Try again in a moment.`;
@@ -1913,7 +1919,7 @@ document.getElementById('obSendTest').onclick = async ()=>{
     statusEl.textContent = 'Sent! Did it arrive on your phone?';
     receivedRow.style.display = 'flex';
   }catch(e){
-    statusEl.textContent = 'Could not send — this can happen on some wifi networks.';
+    statusEl.textContent = `Could not reach the notification service (${e.message || 'network error'}).`;
     helpBox.style.display = 'block';
   }
 };
