@@ -394,6 +394,16 @@
         <div class="settings-hint" style="font-size:15px;">Tap the button below. A notification should arrive on your phone within a few seconds.</div>
         <button class="btn" id="obSendTest" style="width:100%; margin-top:12px;">Send test notification</button>
         <div class="settings-hint" id="obTestStatus" style="margin-top:10px; font-weight:600;"></div>
+        <div id="obReceivedRow" style="display:none; gap:8px; margin-top:14px;">
+          <button class="btn small" id="obReceivedYes" style="flex:1; background:var(--good);" type="button">✅ Yes, I got it</button>
+          <button class="btn small ghost" id="obReceivedNo" style="flex:1;" type="button">❌ No</button>
+        </div>
+        <div id="obHelpBox" style="display:none; margin-top:16px; text-align:left; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px;">
+          <div style="font-weight:700; margin-bottom:6px;">Let's get you help</div>
+          <div class="settings-hint" style="font-size:14px; margin-bottom:12px;">This can happen on some wifi networks — try switching to mobile data and testing again. If it still doesn't work, reach out and we'll help directly.</div>
+          <a class="btn ghost" id="obWatchVideo" style="display:block; text-align:center; text-decoration:none; margin-bottom:8px;" href="#">Watch a video walkthrough</a>
+          <a class="btn" id="obEmailHelp" style="display:block; text-align:center; text-decoration:none;" href="#">Email for help</a>
+        </div>
       </div>
     </div>
 
@@ -1879,20 +1889,59 @@ document.getElementById('obCopyTopic').onclick = async ()=>{
   catch(e){ toast('Copy failed — select and copy manually'); }
 };
 
+const VIDEO_URL = ''; // set this to a real video link once one exists (e.g. a YouTube/Vimeo URL)
+
 document.getElementById('obSendTest').onclick = async ()=>{
   const statusEl = document.getElementById('obTestStatus');
+  const receivedRow = document.getElementById('obReceivedRow');
+  const helpBox = document.getElementById('obHelpBox');
+  receivedRow.style.display = 'none';
+  helpBox.style.display = 'none';
   if(!STATE.settings.ntfyTopic){ statusEl.textContent = 'No code found — go back and check the previous step.'; return; }
   statusEl.textContent = 'Sending…';
   try{
-    await fetch('https://ntfy.sh/' + encodeURIComponent(STATE.settings.ntfyTopic), {
+    const res = await fetch('https://ntfy.sh/' + encodeURIComponent(STATE.settings.ntfyTopic), {
       method: 'POST',
       headers: { 'Title': 'Test notification 🎉' },
       body: 'If you see this, notifications are working!',
     });
-    statusEl.textContent = 'Sent! Check your notifications in a few seconds.';
+    if(!res.ok){
+      statusEl.textContent = `The server reported a problem (error ${res.status}). Try again in a moment.`;
+      helpBox.style.display = 'block';
+      return;
+    }
+    statusEl.textContent = 'Sent! Did it arrive on your phone?';
+    receivedRow.style.display = 'flex';
   }catch(e){
-    statusEl.textContent = 'Could not send — check your internet connection and try again.';
+    statusEl.textContent = 'Could not send — this can happen on some wifi networks.';
+    helpBox.style.display = 'block';
   }
+};
+
+document.getElementById('obReceivedYes').onclick = ()=>{
+  document.getElementById('obReceivedRow').style.display = 'none';
+  document.getElementById('obHelpBox').style.display = 'none';
+  document.getElementById('obTestStatus').textContent = "Great — you're all set for notifications!";
+};
+document.getElementById('obReceivedNo').onclick = ()=>{
+  document.getElementById('obHelpBox').style.display = 'block';
+};
+
+document.getElementById('obWatchVideo').onclick = (e)=>{
+  e.preventDefault();
+  if(VIDEO_URL){ window.open(VIDEO_URL, '_blank'); }
+  else { toast('No video yet — please use "Email for help"'); }
+};
+document.getElementById('obEmailHelp').onclick = (e)=>{
+  e.preventDefault();
+  const subject = encodeURIComponent('Trouble with notifications — Daily Rhythm');
+  const body = encodeURIComponent(
+    `Participant ID: ${document.getElementById('obParticipantId').value || STATE.settings.participantId || '(not set yet)'}\n` +
+    `Notification code: ${STATE.settings.ntfyTopic || ''}\n` +
+    `Device info: ${navigator.userAgent}\n\n` +
+    `Describe what happened:\n`
+  );
+  window.location.href = `mailto:${RESEARCHER_EMAIL_DEFAULT}?subject=${subject}&body=${body}`;
 };
 
 function finishOnboarding(){
