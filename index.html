@@ -644,29 +644,29 @@ function markNotified(tag){ notifiedTags.add(tag); localStorage.setItem('notifie
 
 function checkDueBeeps(){
   ensureToday();
-  // Local notifications now run alongside ntfy (not only as a fallback) —
-  // ntfy can be blocked by some networks/devices, so this gives a second,
-  // independent path. It only fires while this app has been opened recently
-  // (a real limitation), but that's better than zero coverage if ntfy fails.
-  // Safe to run every time: 'notifiedTags' is stored in localStorage (not
-  // sessionStorage), so it won't re-fire the same reminder on every reopen.
-  const nowMin = nowMinutes();
-  const mw = morningWindow();
-  if(!STATE.day.morningDone && nowMin >= mw.start && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
-    fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
-    markNotified('morning-'+STATE.day.date);
-  }
-  STATE.schedule.times.forEach((t, idx)=>{
-    const tag = 'beep-'+idx+'-'+STATE.day.date;
-    if(beepStatus(idx) === 'available' && !notifiedTags.has(tag)){
-      fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
-      markNotified(tag);
+  // ntfy is the single source of truth for notifications when configured
+  // (the default) — this avoids a duplicate, oddly-labeled "Chrome"
+  // notification firing alongside ntfy's own. If ntfy's topic is ever
+  // cleared, this local system automatically resumes as a fallback.
+  if(!STATE.settings.ntfyTopic){
+    const nowMin = nowMinutes();
+    const mw = morningWindow();
+    if(!STATE.day.morningDone && nowMin >= mw.start && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
+      fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
+      markNotified('morning-'+STATE.day.date);
     }
-  });
-  const ew = eveningWindow();
-  if(!STATE.day.eveningDone && nowMin >= ew.start && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
-    fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
-    markNotified('evening-'+STATE.day.date);
+    STATE.schedule.times.forEach((t, idx)=>{
+      const tag = 'beep-'+idx+'-'+STATE.day.date;
+      if(beepStatus(idx) === 'available' && !notifiedTags.has(tag)){
+        fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
+        markNotified(tag);
+      }
+    });
+    const ew = eveningWindow();
+    if(!STATE.day.eveningDone && nowMin >= ew.start && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
+      fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
+      markNotified('evening-'+STATE.day.date);
+    }
   }
   renderHome();
 }
