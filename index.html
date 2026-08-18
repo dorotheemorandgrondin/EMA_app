@@ -177,7 +177,7 @@
   #onboardLayer.spotlight-mode{ background:transparent; }
   #tutorialDim{ position:fixed; inset:0; background:rgba(20,20,20,0.74); z-index:55; pointer-events:none; }
   #tutorialSpotlightHole{ position:fixed; border-radius:20px; box-shadow:0 0 0 9999px rgba(20,20,20,0.74); z-index:55; pointer-events:none; transition:left .25s ease, top .25s ease, width .25s ease, height .25s ease; }
-  .tutorial-tooltip{ position:fixed; z-index:57; background:#fff; border-radius:20px; padding:22px 22px; box-shadow:0 10px 34px rgba(0,0,0,0.28); max-width:330px; margin:0 auto; text-align:center; border-top:6px solid var(--amber); }
+  .tutorial-tooltip{ position:fixed; z-index:57; background:#fff; border-radius:20px; padding:22px 22px; box-shadow:0 10px 34px rgba(0,0,0,0.28); max-width:330px; max-height:calc(100vh - 190px); overflow-y:auto; margin:0 auto; text-align:center; border-top:6px solid var(--amber); }
   .tutorial-tooltip.accent-teal{ border-top-color:var(--teal); }
   .tutorial-tooltip.accent-dawn{ border-top-color:var(--dawn); }
   .tutorial-tooltip.accent-dusk{ border-top-color:var(--dusk); }
@@ -387,7 +387,7 @@
 
     <div class="onboard-page tutorial-page" data-page="2">
       <div class="tutorial-tooltip tutorial-tooltip-centered accent-dawn">
-        <div class="tutorial-icon">📝😊</div>
+        <div class="tutorial-icon">📝</div>
         <div class="tutorial-text">We will ask you to complete short questionnaires throughout the day, asking you about what you are doing and how you are feeling.</div>
       </div>
     </div>
@@ -409,33 +409,45 @@
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">🔔</div>
         <div class="tutorial-text">Then, you'll have 6 questionnaires to fill out at random times during the day. We will send you a notification when it's time to fill it.</div>
-        <div class="tutorial-subbubble">⚠️ Careful! When you're sent a notification, you'll have 30 min to complete the questionnaire before it closes.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="6" data-target="#cardEvening">
+    <div class="onboard-page tutorial-page" data-page="6" data-target-all=".card-beep">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">⚠️</div>
+        <div class="tutorial-text">Careful! When you're sent a notification, you'll have 30 min to complete the questionnaire before it closes.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="7" data-target="#cardEvening">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">🌙</div>
         <div class="tutorial-text">Finally, during the evening, you'll have one final form to fill. Do it each day around the same time in your evening routine (e.g., after brushing your teeth).</div>
-        <div class="tutorial-subbubble">📊🎉 At the end of the day, you'll see fun stats about your day!</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="7" data-target=".arc-card">
+    <div class="onboard-page tutorial-page" data-page="8" data-target="#cardEvening">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">📊🎉</div>
+        <div class="tutorial-text">At the end of the day, you'll see fun stats about your day!</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="9" data-target=".arc-card">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">👆</div>
-        <div class="tutorial-text">At the top, you can always see your progression throughout the day.</div>
+        <div class="tutorial-text">At the top, you can see your progression throughout the day.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="8" data-target=".note-card">
+    <div class="onboard-page tutorial-page" data-page="10" data-target=".note-card">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">💬</div>
         <div class="tutorial-text">If there is anything else you'd like to tell us about your day, or are experiencing any difficulty, just indicate it anytime in the note box.</div>
       </div>
     </div>
 
-    <div class="onboard-page" data-page="9" style="text-align:center; padding-top:30px;">
+    <div class="onboard-page" data-page="11" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:22px;">One more step</div>
       <div class="settings-hint" style="font-size:15.5px; line-height:1.7; max-width:320px; margin:0 auto;">
         To complete this study, you need to enable notifications — they tell you exactly when each check-in is open.<br><br>
@@ -443,7 +455,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="10">
+    <div class="onboard-page" data-page="12">
       <div class="settings-field">
         <label>Step 1 of 4 — Install the ntfy app</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.7;">
@@ -454,7 +466,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="11">
+    <div class="onboard-page" data-page="13">
       <div class="settings-field">
         <label>Step 2 of 4 — Your unique code</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.6;">This code belongs only to you. Tap Copy, then move to the next step.</div>
@@ -465,7 +477,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="12">
+    <div class="onboard-page" data-page="14">
       <div class="settings-field">
         <label>Step 3 of 4 — Add your code to ntfy</label>
         <div class="settings-hint" style="font-size:15px; line-height:2;">
@@ -477,7 +489,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="13" style="text-align:center;">
+    <div class="onboard-page" data-page="15" style="text-align:center;">
       <div class="settings-field">
         <label>Step 4 of 4 — Test it</label>
         <div class="settings-hint" style="font-size:15px;">Tap the button below. A notification should arrive on your phone within a few seconds.</div>
@@ -497,7 +509,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="14" style="text-align:center; padding-top:30px;">
+    <div class="onboard-page" data-page="16" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:24px;">You're all set! 🎉</div>
       <div class="settings-hint" style="font-size:15.5px;">Tap Finish to start using the app.</div>
     </div>
@@ -1970,10 +1982,10 @@ document.getElementById('instructionsClose').onclick = ()=>{
 };
 
 /* ---------------- First-time onboarding wizard ---------------- */
-const ONBOARD_PAGE_COUNT = 15;
+const ONBOARD_PAGE_COUNT = 17;
 const TUTORIAL_FIRST_PAGE = 1;
-const TUTORIAL_LAST_PAGE = 8;
-const NOTIF_INTRO_PAGE = 9;
+const TUTORIAL_LAST_PAGE = 10;
+const NOTIF_INTRO_PAGE = 11;
 let onboardPos = 0;
 
 function openOnboarding(){
@@ -2006,7 +2018,7 @@ function renderOnboardStep(){
   document.getElementById('onboardNext').textContent = onboardPos === ONBOARD_PAGE_COUNT - 1 ? 'Finish' : 'Next';
   document.getElementById('onboardProgressBar').style.width = Math.round(((onboardPos+1)/ONBOARD_PAGE_COUNT)*100) + '%';
   document.getElementById('onboardSkip').style.display = (onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE) ? 'block' : 'none';
-  if(onboardPos === 11){
+  if(onboardPos === 13){
     document.getElementById('obNtfyTopic').value = STATE.settings.ntfyTopic || '';
   }
   document.getElementById('onboardBody').scrollTop = 0;
@@ -2083,18 +2095,33 @@ function updateTutorialSpotlight(){
       tooltip.classList.remove('tutorial-tooltip-centered');
       tooltip.style.left = '20px';
       tooltip.style.right = '20px';
+      tooltip.style.maxHeight = '';
+      tooltip.style.overflowY = '';
       const usableTop = HEADER_SPACE;
       const usableBottom = window.innerHeight - FOOTER_SPACE;
-      const spaceBelow = usableBottom - rect.bottom;
-      const spaceAbove = rect.top - usableTop;
-      if(spaceBelow >= 140 || spaceBelow >= spaceAbove){
-        tooltip.style.top = Math.max(rect.bottom + pad + 16, usableTop) + 'px';
+      const tooltipHeight = tooltip.offsetHeight;
+      const spaceBelow = usableBottom - (rect.bottom + pad + 16);
+      const spaceAbove = (rect.top - pad - 16) - usableTop;
+
+      if(spaceBelow >= tooltipHeight || spaceBelow >= spaceAbove){
+        const top = rect.bottom + pad + 16;
+        tooltip.style.top = top + 'px';
         tooltip.style.bottom = 'auto';
+        if(tooltipHeight > usableBottom - top){
+          tooltip.style.maxHeight = Math.max(usableBottom - top, 90) + 'px';
+          tooltip.style.overflowY = 'auto';
+        }
         tooltip.classList.add('arrow-up');
         tooltip.classList.remove('arrow-down');
       } else {
-        tooltip.style.bottom = Math.max(window.innerHeight - rect.top + pad + 16, window.innerHeight - usableBottom) + 'px';
+        const bottom = window.innerHeight - rect.top + pad + 16;
+        tooltip.style.bottom = bottom + 'px';
         tooltip.style.top = 'auto';
+        const availableAbove = (window.innerHeight - bottom) - usableTop;
+        if(tooltipHeight > availableAbove){
+          tooltip.style.maxHeight = Math.max(availableAbove, 90) + 'px';
+          tooltip.style.overflowY = 'auto';
+        }
         tooltip.classList.add('arrow-down');
         tooltip.classList.remove('arrow-up');
       }
