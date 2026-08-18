@@ -166,7 +166,10 @@
   #daySummaryLayer{ position:fixed; inset:0; background:linear-gradient(180deg, #FFF6E0, var(--paper) 55%); z-index:53; display:none; flex-direction:column; }
   #daySummaryLayer.open{ display:flex; }
   .summary-headline{ font-family:Georgia,serif; font-size:28px; font-weight:800; margin-bottom:6px; }
-  .skip-tutorial-btn{ background:none; border:none; color:var(--ink-soft); font-size:13px; text-decoration:underline; padding:6px 10px; cursor:pointer; white-space:nowrap; }
+  .skip-tutorial-btn{ background:rgba(255,255,255,0.95); border:none; color:var(--ink); font-size:13px; font-weight:600; text-decoration:none; padding:8px 14px; border-radius:20px; cursor:pointer; white-space:nowrap; box-shadow:0 2px 10px rgba(0,0,0,0.12); }
+  #onboardLayer.spotlight-mode .survey-foot{ background:rgba(255,255,255,0.97); backdrop-filter:blur(6px); border-radius:22px 22px 0 0; padding-top:16px; box-shadow:0 -4px 20px rgba(0,0,0,0.12); }
+  #onboardLayer.spotlight-mode .survey-foot .btn.ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--line); }
+  #onboardLayer.spotlight-mode .survey-progress{ background:rgba(255,255,255,0.35); }
   #onboardLayer.spotlight-mode{ background:transparent; }
   #tutorialDim{ position:fixed; inset:0; background:rgba(20,20,20,0.74); z-index:55; pointer-events:none; }
   #tutorialSpotlightHole{ position:fixed; border-radius:20px; box-shadow:0 0 0 9999px rgba(20,20,20,0.74); z-index:55; pointer-events:none; transition:left .25s ease, top .25s ease, width .25s ease, height .25s ease; }
@@ -369,54 +372,41 @@
 
     <div class="onboard-page tutorial-page" data-page="1">
       <div class="tutorial-tooltip tutorial-tooltip-centered">
-        <div class="tutorial-icon" style="font-size:44px;">🕰️</div>
-        <div class="tutorial-text">For this research project, we are curious to know about how you spend your time during your day, and how you feel throughout it.</div>
+        <div class="tutorial-text">For this research project, we are interested in how you spend your time during your day, and how you feel throughout it.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="2">
       <div class="tutorial-tooltip tutorial-tooltip-centered">
-        <div class="tutorial-icon" style="font-size:44px;">📝</div>
         <div class="tutorial-text">We will ask you to complete short questionnaires throughout your day, asking you about what you are doing and how you are feeling.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="3" data-target="#todayCards">
-      <div class="tutorial-tooltip">
+    <div class="onboard-page tutorial-page" data-page="3">
+      <div class="tutorial-tooltip tutorial-tooltip-centered">
         <div class="tutorial-text">Just answer truthfully and to the best of your knowledge.</div>
-        <div class="tutorial-example">
-          <div class="tutorial-example-label">Example question</div>
-          <div class="tutorial-example-q">What did you do in the last 2 hours?</div>
-          <div class="tutorial-example-chips">🍳 💼 🏃 🛋️ ➕</div>
-        </div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="4" data-target=".note-card">
+    <div class="onboard-page tutorial-page" data-page="4" data-target=".arc-card">
       <div class="tutorial-tooltip">
-        <div class="tutorial-text">If there is anything else you'd like the research team to know, just indicate it anytime in the note box below.</div>
+        <div class="tutorial-text">At the top, you can see your progression throughout the day.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="5" data-target=".arc-card">
+    <div class="onboard-page tutorial-page" data-page="5" data-target="#cardMorning">
       <div class="tutorial-tooltip">
-        <div class="tutorial-text">At the top you can see your progression. You'll have a morning questionnaire — please answer it every day close to when you wake up, at the same time in your routine, e.g. during your first coffee of the day, or before brushing your teeth.</div>
-        <div class="tutorial-example">
-          <div class="tutorial-example-label">Example, later in the day</div>
-          <div class="tutorial-progress-example">
-            <div class="mini-dot done">✓</div><div class="mini-dot done">✓</div><div class="mini-dot done">✓</div><div class="mini-dot due"></div><div class="mini-dot upcoming"></div><div class="mini-dot upcoming"></div><div class="mini-dot upcoming"></div><div class="mini-dot upcoming"></div>
-          </div>
-        </div>
+        <div class="tutorial-text">You'll have a morning questionnaire — please answer it every day close to when you wake up, at the same time in your routine, e.g. during your first coffee of the day, or before brushing your teeth.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="6" data-target="#todayCards">
+    <div class="onboard-page tutorial-page" data-page="6" data-target-all=".card-beep">
       <div class="tutorial-tooltip">
-        <div class="tutorial-text">Then, you'll have 6 questionnaires at random times during the day. Careful! When you're sent a notification to complete it, you'll have 30 minutes to do it before it closes.</div>
+        <div class="tutorial-text">Then, you'll have 6 questionnaires at random times during the day. Careful — when you're sent a notification to complete one, you'll have 30 minutes to do it before it closes.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="7" data-target="#todayCards">
+    <div class="onboard-page tutorial-page" data-page="7" data-target="#cardEvening">
       <div class="tutorial-tooltip">
         <div class="tutorial-text">Then, during the evening, you'll fill out a final form.</div>
       </div>
@@ -424,19 +414,17 @@
 
     <div class="onboard-page tutorial-page" data-page="8">
       <div class="tutorial-tooltip tutorial-tooltip-centered">
-        <div class="tutorial-icon" style="font-size:44px;">📊✨</div>
-        <div class="tutorial-text">You'll then have access to fun stats about your day!</div>
-        <div class="tutorial-example">
-          <div class="tutorial-example-label">Example</div>
-          <div style="font-family:Georgia,serif; font-weight:700; font-size:14.5px; margin-bottom:8px;">Here's what you did today:</div>
-          <div style="font-size:15px; margin-bottom:14px;">🏃 Sport &nbsp; 💼 Work &nbsp; 👥 Social activity</div>
-          <div class="tutorial-example-label">Mood tracker</div>
-          <div style="font-size:20px;">😐 🙂 🙂 😄 🙂 😄 😄 🙂</div>
-        </div>
+        <div class="tutorial-text">At the end of the day, you'll see fun stats about your day!</div>
       </div>
     </div>
 
-    <div class="onboard-page" data-page="9" style="text-align:center; padding-top:30px;">
+    <div class="onboard-page tutorial-page" data-page="9" data-target=".note-card">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-text">If there is anything else you'd like the research team to know, just indicate it anytime in the note box below.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="10" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:22px;">One more step</div>
       <div class="settings-hint" style="font-size:15.5px; line-height:1.7; max-width:320px; margin:0 auto;">
         To complete this study, you need to enable notifications — they tell you exactly when each check-in is open.<br><br>
@@ -444,7 +432,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="10">
+    <div class="onboard-page" data-page="11">
       <div class="settings-field">
         <label>Step 1 of 4 — Install the ntfy app</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.7;">
@@ -455,7 +443,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="11">
+    <div class="onboard-page" data-page="12">
       <div class="settings-field">
         <label>Step 2 of 4 — Your unique code</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.6;">This code belongs only to you. Tap Copy, then move to the next step.</div>
@@ -466,7 +454,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="12">
+    <div class="onboard-page" data-page="13">
       <div class="settings-field">
         <label>Step 3 of 4 — Add your code to ntfy</label>
         <div class="settings-hint" style="font-size:15px; line-height:2;">
@@ -478,7 +466,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="13" style="text-align:center;">
+    <div class="onboard-page" data-page="14" style="text-align:center;">
       <div class="settings-field">
         <label>Step 4 of 4 — Test it</label>
         <div class="settings-hint" style="font-size:15px;">Tap the button below. A notification should arrive on your phone within a few seconds.</div>
@@ -498,7 +486,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="14" style="text-align:center; padding-top:30px;">
+    <div class="onboard-page" data-page="15" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:24px;">You're all set! 🎉</div>
       <div class="settings-hint" style="font-size:15.5px;">Tap Finish to start using the app.</div>
     </div>
@@ -923,10 +911,12 @@ function renderHome(){
   const el = document.getElementById('todayCards');
   el.innerHTML = '';
 
-  function card(kind, title, sub, state, onClick){
+  function card(kind, title, sub, state, onClick, elId){
     // state: 'done' | 'available' | 'upcoming' | 'missed'
     const d = document.createElement('div');
     d.className = 'card' + (state==='available' ? ' due' : '') + (state==='missed' ? ' missed' : '');
+    if(elId) d.id = elId;
+    if(kind==='beep') d.classList.add('card-beep');
     d.innerHTML = `<div class="dot ${kind}"></div>
       <div class="meta"><div class="t">${title}</div><div class="s">${sub}</div></div>`;
     const btn = document.createElement('button');
@@ -940,7 +930,7 @@ function renderHome(){
 
   const mw = morningWindow();
   card('morning', 'Morning check-in', `Window ${minToHHMM(mw.start)}\u2013${minToHHMM(mw.end)}`,
-    checkpointStatus(mw, STATE.day.morningDone), ()=>startSurvey('morning'));
+    checkpointStatus(mw, STATE.day.morningDone), ()=>startSurvey('morning'), 'cardMorning');
 
   STATE.schedule.times.forEach((t, idx)=>{
     const done = STATE.day.beepsDone.includes(idx);
@@ -953,7 +943,7 @@ function renderHome(){
 
   const ew = eveningWindow();
   card('evening', 'Evening check-in', `Window ${minToHHMM(ew.start)}\u2013${minToHHMM(ew.end)}`,
-    checkpointStatus(ew, STATE.day.eveningDone), ()=>startSurvey('evening'));
+    checkpointStatus(ew, STATE.day.eveningDone), ()=>startSurvey('evening'), 'cardEvening');
 
   if(STATE.settings.pilotMode){
     const note = document.createElement('div');
@@ -1969,10 +1959,10 @@ document.getElementById('instructionsClose').onclick = ()=>{
 };
 
 /* ---------------- First-time onboarding wizard ---------------- */
-const ONBOARD_PAGE_COUNT = 15;
+const ONBOARD_PAGE_COUNT = 16;
 const TUTORIAL_FIRST_PAGE = 1;
-const TUTORIAL_LAST_PAGE = 8;
-const NOTIF_INTRO_PAGE = 9;
+const TUTORIAL_LAST_PAGE = 9;
+const NOTIF_INTRO_PAGE = 10;
 let onboardPos = 0;
 
 function openOnboarding(){
@@ -1991,6 +1981,7 @@ function openOnboarding(){
   updateMedToggle();
   renderOnboardStep();
   document.getElementById('onboardLayer').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function renderOnboardStep(){
@@ -2001,7 +1992,7 @@ function renderOnboardStep(){
   document.getElementById('onboardNext').textContent = onboardPos === ONBOARD_PAGE_COUNT - 1 ? 'Finish' : 'Next';
   document.getElementById('onboardProgressBar').style.width = Math.round(((onboardPos+1)/ONBOARD_PAGE_COUNT)*100) + '%';
   document.getElementById('onboardSkip').style.display = (onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE) ? 'block' : 'none';
-  if(onboardPos === 11){
+  if(onboardPos === 12){
     document.getElementById('obNtfyTopic').value = STATE.settings.ntfyTopic || '';
   }
   document.getElementById('onboardBody').scrollTop = 0;
@@ -2028,13 +2019,29 @@ function updateTutorialSpotlight(){
   }
   const pageEl = document.querySelector('.onboard-page[data-page="'+onboardPos+'"]');
   const targetSel = pageEl ? pageEl.dataset.target : null;
+  const targetAllSel = pageEl ? pageEl.dataset.targetAll : null;
   const tooltip = pageEl ? pageEl.querySelector('.tutorial-tooltip') : null;
-  const target = targetSel ? document.querySelector(targetSel) : null;
 
-  if(target){
+  let rect = null;
+  if(targetAllSel){
+    const els = document.querySelectorAll(targetAllSel);
+    if(els.length){
+      let l=Infinity, t=Infinity, r=-Infinity, b=-Infinity;
+      els.forEach(el=>{
+        const rc = el.getBoundingClientRect();
+        l = Math.min(l, rc.left); t = Math.min(t, rc.top);
+        r = Math.max(r, rc.right); b = Math.max(b, rc.bottom);
+      });
+      rect = { left:l, top:t, right:r, bottom:b, width:r-l, height:b-t };
+    }
+  } else if(targetSel){
+    const target = document.querySelector(targetSel);
+    if(target) rect = target.getBoundingClientRect();
+  }
+
+  if(rect){
     dim.style.display = 'none';
     hole.style.display = 'block';
-    const rect = target.getBoundingClientRect();
     const pad = 8;
     hole.style.left = (rect.left - pad) + 'px';
     hole.style.top = (rect.top - pad) + 'px';
@@ -2175,6 +2182,7 @@ function finishOnboarding(){
   saveState();
   scheduleNtfyUpcoming();
   document.getElementById('onboardLayer').classList.remove('open');
+  document.body.style.overflow = '';
   renderHome();
   toast('All set — welcome!');
 }
