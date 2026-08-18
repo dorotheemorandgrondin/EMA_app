@@ -35,7 +35,7 @@
   h1,h2,h3{ font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; font-weight:600; margin:0; letter-spacing:-0.01em;}
   .mono{ font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
   #app{ max-width: 480px; margin:0 auto; padding: 20px 18px 8px; }
-  #app.frozen-preview{ height:100vh; overflow-y:hidden; position:relative; touch-action:none; }
+  #app.frozen-preview{ height:100vh; overflow:hidden; position:relative; touch-action:none; pointer-events:none; }
 
   .topbar{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
   .topbar .clock{ font-size:13px; color:var(--ink-soft); }
@@ -102,7 +102,7 @@
   /* --- Survey overlay --- */
   #surveyLayer{ position:fixed; inset:0; background:var(--paper); z-index:50; display:none; flex-direction:column; }
   #surveyLayer.open{ display:flex; }
-  .survey-head{ padding:16px 18px 10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); }
+  .survey-head{ padding:16px 18px 10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); position:relative; z-index:60; }
   .survey-head .x{ font-size:20px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:4px 8px;}
   .survey-progress{ height:3px; background:var(--paper-2); border-radius:2px; overflow:hidden; flex:1;}
   .survey-progress > div{ height:100%; background:var(--teal); transition: width .25s ease; }
@@ -123,7 +123,7 @@
     margin-bottom:18px;
   }
   .q-text.secondary{ font-family:'Inter',sans-serif; font-size:17px; font-weight:500; color:var(--ink-soft); margin-bottom:20px; }
-  .survey-foot{ position:fixed; bottom:0; left:0; right:0; padding:14px 20px 22px; background:linear-gradient(180deg, transparent, var(--paper) 30%); display:flex; justify-content:space-between; gap:10px;}
+  .survey-foot{ position:fixed; bottom:0; left:0; right:0; padding:14px 20px 22px; background:linear-gradient(180deg, transparent, var(--paper) 30%); display:flex; justify-content:space-between; gap:10px; z-index:60;}
   .survey-foot .btn{ flex:1; padding:13px; font-size:15px; }
 
   /* slider */
@@ -185,7 +185,8 @@
   .tutorial-tooltip.arrow-up::before{ content:''; position:absolute; top:-9px; left:50%; transform:translateX(-50%); border-left:10px solid transparent; border-right:10px solid transparent; border-bottom:10px solid #fff; }
   .tutorial-tooltip.arrow-down::after{ content:''; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%); border-left:10px solid transparent; border-right:10px solid transparent; border-top:10px solid #fff; }
   .tutorial-icon{ font-size:48px; margin-bottom:12px; line-height:1; }
-  .tutorial-text{ font-size:19px; line-height:1.5; color:var(--ink); font-family:Georgia,serif; font-weight:600; }
+  .tutorial-text{ font-size:19px; line-height:1.5; color:var(--ink); font-family:Georgia,serif; font-weight:400; }
+  .tutorial-subbubble{ margin-top:14px; padding:11px 13px; background:var(--paper-2); border-radius:12px; font-size:14.5px; line-height:1.5; font-family:'Inter',sans-serif; color:var(--ink-soft); text-align:left; }
   .tutorial-example{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); text-align:left; }
   .tutorial-example-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:8px; }
   .tutorial-example-q{ font-family:Georgia,serif; font-size:14.5px; margin-bottom:8px; }
@@ -379,21 +380,20 @@
 
     <div class="onboard-page tutorial-page" data-page="1">
       <div class="tutorial-tooltip tutorial-tooltip-centered accent-teal">
-        <div class="tutorial-icon">🕰️✨</div>
-        <div class="tutorial-text">For this research project, we are interested in how you spend your time during your day, and how you feel throughout it.</div>
+        <div class="tutorial-icon">🕰️</div>
+        <div class="tutorial-text">For this project, we are interested in learning more about how you spend your time during the day.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="2">
       <div class="tutorial-tooltip tutorial-tooltip-centered accent-dawn">
-        <div class="tutorial-icon">📝💭</div>
-        <div class="tutorial-text">We will ask you to complete short questionnaires throughout your day, asking you about what you are doing and how you are feeling.</div>
+        <div class="tutorial-icon">📝😊</div>
+        <div class="tutorial-text">We will ask you to complete short questionnaires throughout the day, asking you about what you are doing and how you are feeling.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="3">
       <div class="tutorial-tooltip tutorial-tooltip-centered accent-dusk">
-        <div class="tutorial-icon">💛</div>
         <div class="tutorial-text">Just answer truthfully and to the best of your knowledge.</div>
       </div>
     </div>
@@ -401,46 +401,41 @@
     <div class="onboard-page tutorial-page" data-page="4" data-target="#cardMorning">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">☀️</div>
-        <div class="tutorial-text">You'll have a morning questionnaire — please answer it every day close to when you wake up, at the same time in your routine, e.g. during your first coffee of the day, or before brushing your teeth.</div>
+        <div class="tutorial-text">You'll have a morning questionnaire — please answer it every day around the same time during your morning routine (e.g., during your first coffee, or after brushing your teeth).</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="5" data-target-all=".card-beep">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">🔔</div>
-        <div class="tutorial-text">Then, you'll have 6 questionnaires at random times during the day. Careful — when you're sent a notification to complete one, you'll have 30 minutes to do it before it closes.</div>
+        <div class="tutorial-text">Then, you'll have 6 questionnaires to fill out at random times during the day. We will send you a notification when it's time to fill it.</div>
+        <div class="tutorial-subbubble">⚠️ Careful! When you're sent a notification, you'll have 30 min to complete the questionnaire before it closes.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="6" data-target="#cardEvening">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">🌙</div>
-        <div class="tutorial-text">Then, during the evening, you'll fill out a final form.</div>
+        <div class="tutorial-text">Finally, during the evening, you'll have one final form to fill. Do it each day around the same time in your evening routine (e.g., after brushing your teeth).</div>
+        <div class="tutorial-subbubble">📊🎉 At the end of the day, you'll see fun stats about your day!</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="7" data-target=".arc-card">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">👆</div>
-        <div class="tutorial-text">At the top, you can see your progression throughout the day.</div>
+        <div class="tutorial-text">At the top, you can always see your progression throughout the day.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="8">
-      <div class="tutorial-tooltip tutorial-tooltip-centered accent-teal">
-        <div class="tutorial-icon">📊🎉</div>
-        <div class="tutorial-text">At the end of the day, you'll see fun stats about your day!</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="9" data-target=".note-card">
+    <div class="onboard-page tutorial-page" data-page="8" data-target=".note-card">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">💬</div>
-        <div class="tutorial-text">If there is anything else you'd like the research team to know, just indicate it anytime in the note box below.</div>
+        <div class="tutorial-text">If there is anything else you'd like to tell us about your day, or are experiencing any difficulty, just indicate it anytime in the note box.</div>
       </div>
     </div>
 
-    <div class="onboard-page" data-page="10" style="text-align:center; padding-top:30px;">
+    <div class="onboard-page" data-page="9" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:22px;">One more step</div>
       <div class="settings-hint" style="font-size:15.5px; line-height:1.7; max-width:320px; margin:0 auto;">
         To complete this study, you need to enable notifications — they tell you exactly when each check-in is open.<br><br>
@@ -448,7 +443,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="11">
+    <div class="onboard-page" data-page="10">
       <div class="settings-field">
         <label>Step 1 of 4 — Install the ntfy app</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.7;">
@@ -459,7 +454,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="12">
+    <div class="onboard-page" data-page="11">
       <div class="settings-field">
         <label>Step 2 of 4 — Your unique code</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.6;">This code belongs only to you. Tap Copy, then move to the next step.</div>
@@ -470,7 +465,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="13">
+    <div class="onboard-page" data-page="12">
       <div class="settings-field">
         <label>Step 3 of 4 — Add your code to ntfy</label>
         <div class="settings-hint" style="font-size:15px; line-height:2;">
@@ -482,7 +477,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="14" style="text-align:center;">
+    <div class="onboard-page" data-page="13" style="text-align:center;">
       <div class="settings-field">
         <label>Step 4 of 4 — Test it</label>
         <div class="settings-hint" style="font-size:15px;">Tap the button below. A notification should arrive on your phone within a few seconds.</div>
@@ -502,7 +497,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="15" style="text-align:center; padding-top:30px;">
+    <div class="onboard-page" data-page="14" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:24px;">You're all set! 🎉</div>
       <div class="settings-hint" style="font-size:15.5px;">Tap Finish to start using the app.</div>
     </div>
@@ -1975,10 +1970,10 @@ document.getElementById('instructionsClose').onclick = ()=>{
 };
 
 /* ---------------- First-time onboarding wizard ---------------- */
-const ONBOARD_PAGE_COUNT = 16;
+const ONBOARD_PAGE_COUNT = 15;
 const TUTORIAL_FIRST_PAGE = 1;
-const TUTORIAL_LAST_PAGE = 9;
-const NOTIF_INTRO_PAGE = 10;
+const TUTORIAL_LAST_PAGE = 8;
+const NOTIF_INTRO_PAGE = 9;
 let onboardPos = 0;
 
 function openOnboarding(){
@@ -1999,6 +1994,8 @@ function openOnboarding(){
   document.getElementById('onboardLayer').classList.add('open');
   document.getElementById('app').classList.add('frozen-preview');
   document.getElementById('app').scrollTop = 0;
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
 }
 
 function renderOnboardStep(){
@@ -2009,7 +2006,7 @@ function renderOnboardStep(){
   document.getElementById('onboardNext').textContent = onboardPos === ONBOARD_PAGE_COUNT - 1 ? 'Finish' : 'Next';
   document.getElementById('onboardProgressBar').style.width = Math.round(((onboardPos+1)/ONBOARD_PAGE_COUNT)*100) + '%';
   document.getElementById('onboardSkip').style.display = (onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE) ? 'block' : 'none';
-  if(onboardPos === 12){
+  if(onboardPos === 11){
     document.getElementById('obNtfyTopic').value = STATE.settings.ntfyTopic || '';
   }
   document.getElementById('onboardBody').scrollTop = 0;
@@ -2025,6 +2022,8 @@ document.getElementById('onboardSkip').onclick = ()=>{
    a specific element (data-target on the active page) or a uniform dim with
    a centered message for generic, non-pointing steps. */
 function updateTutorialSpotlight(){
+  const HEADER_SPACE = 64;  // clears the progress bar / skip button
+  const FOOTER_SPACE = 110; // clears the Back/Next buttons
   const inTutorial = onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE;
   document.getElementById('onboardLayer').classList.toggle('spotlight-mode', inTutorial);
   const dim = document.getElementById('tutorialDim');
@@ -2046,7 +2045,6 @@ function updateTutorialSpotlight(){
   const scrollTarget = targetAllSel ? document.querySelector(targetAllSel) : (targetSel ? document.querySelector(targetSel) : null);
   const appEl = document.getElementById('app');
   if(scrollTarget){
-    const HEADER_SPACE = 60;
     const r0 = scrollTarget.getBoundingClientRect();
     const a0 = appEl.getBoundingClientRect();
     const targetTopInApp = (r0.top - a0.top) + appEl.scrollTop;
@@ -2085,15 +2083,17 @@ function updateTutorialSpotlight(){
       tooltip.classList.remove('tutorial-tooltip-centered');
       tooltip.style.left = '20px';
       tooltip.style.right = '20px';
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      if(spaceBelow >= 200 || spaceBelow > spaceAbove){
-        tooltip.style.top = (rect.bottom + pad + 16) + 'px';
+      const usableTop = HEADER_SPACE;
+      const usableBottom = window.innerHeight - FOOTER_SPACE;
+      const spaceBelow = usableBottom - rect.bottom;
+      const spaceAbove = rect.top - usableTop;
+      if(spaceBelow >= 140 || spaceBelow >= spaceAbove){
+        tooltip.style.top = Math.max(rect.bottom + pad + 16, usableTop) + 'px';
         tooltip.style.bottom = 'auto';
         tooltip.classList.add('arrow-up');
         tooltip.classList.remove('arrow-down');
       } else {
-        tooltip.style.bottom = (window.innerHeight - rect.top + pad + 16) + 'px';
+        tooltip.style.bottom = Math.max(window.innerHeight - rect.top + pad + 16, window.innerHeight - usableBottom) + 'px';
         tooltip.style.top = 'auto';
         tooltip.classList.add('arrow-down');
         tooltip.classList.remove('arrow-up');
@@ -2216,6 +2216,8 @@ function finishOnboarding(){
   scheduleNtfyUpcoming();
   document.getElementById('onboardLayer').classList.remove('open');
   document.getElementById('app').classList.remove('frozen-preview');
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
   renderHome();
   toast('All set — welcome!');
 }
