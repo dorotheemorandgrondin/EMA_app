@@ -459,10 +459,15 @@
       <div class="settings-field">
         <label>Step 1 of 4 — Install the ntfy app</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.7;">
-          This is a free, separate app whose only job is delivering your reminders — it keeps working even when Daily Rhythm is fully closed.<br><br>
-          Open the Play Store on your phone and search for <b>ntfy</b> (by heckel.io). Install it, then come back to this screen.
+          This is a free, separate app whose only job is delivering your reminders — it keeps working even when Daily Rhythm is fully closed. It's available for both iPhone and Android.
         </div>
-        <a class="btn ghost" style="display:block; text-align:center; margin-top:12px; text-decoration:none;" href="https://play.google.com/store/search?q=ntfy&c=apps" target="_blank" rel="noopener">Open Play Store</a>
+        <div class="toggle-row" style="margin-top:10px;">
+          <button class="btn ghost toggle-btn" id="obPlatformAndroid" data-val="android">🤖 Android</button>
+          <button class="btn ghost toggle-btn" id="obPlatformIos" data-val="ios">📱 iPhone</button>
+        </div>
+        <a class="btn ghost" id="obPlatformAndroidLink" style="display:none; text-align:center; margin-top:12px; text-decoration:none;" href="https://play.google.com/store/search?q=ntfy&c=apps" target="_blank" rel="noopener">Open Play Store</a>
+        <a class="btn ghost" id="obPlatformIosLink" style="display:none; text-align:center; margin-top:12px; text-decoration:none;" href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener">Open App Store</a>
+        <div class="settings-hint" id="obPlatformIosNote" style="display:none; margin-top:10px; font-size:13px;">One honest note: on iPhone, notifications occasionally arrive a little less instantly than on Android — that's an Apple/iOS thing, not specific to this app. It's still worth testing on the next screen either way.</div>
       </div>
     </div>
 
@@ -595,7 +600,7 @@ function loadState(){
       settings: {
         wakeEarliest: WAKE_EARLIEST_DEFAULT, wakeLatest: WAKE_LATEST_DEFAULT,
         bedEarliest: BED_EARLIEST_DEFAULT, bedLatest: BED_LATEST_DEFAULT,
-        notifOn:false, participantId:'', hasParkinsons:null, takesMedication:null, pilotMode:false,
+        notifOn:false, participantId:'', hasParkinsons:null, takesMedication:null, pilotMode:false, devicePlatform:null,
         researcherEmail: RESEARCHER_EMAIL_DEFAULT, ntfyTopic: 'dailyrhythm-'+randTopicSuffix(),
       },
       schedule: { date: null, times: [] },
@@ -1988,6 +1993,17 @@ const TUTORIAL_LAST_PAGE = 10;
 const NOTIF_INTRO_PAGE = 11;
 let onboardPos = 0;
 
+function updatePlatformToggle(){
+  const p = STATE.settings.devicePlatform;
+  document.getElementById('obPlatformAndroid').classList.toggle('active', p === 'android');
+  document.getElementById('obPlatformIos').classList.toggle('active', p === 'ios');
+  document.getElementById('obPlatformAndroidLink').style.display = p === 'android' ? 'block' : 'none';
+  document.getElementById('obPlatformIosLink').style.display = p === 'ios' ? 'block' : 'none';
+  document.getElementById('obPlatformIosNote').style.display = p === 'ios' ? 'block' : 'none';
+}
+document.getElementById('obPlatformAndroid').onclick = ()=>{ STATE.settings.devicePlatform = 'android'; saveState(); updatePlatformToggle(); };
+document.getElementById('obPlatformIos').onclick = ()=>{ STATE.settings.devicePlatform = 'ios'; saveState(); updatePlatformToggle(); };
+
 function openOnboarding(){
   onboardPos = 0;
   pendingHasParkinsons = STATE.settings.hasParkinsons;
@@ -2002,6 +2018,7 @@ function openOnboarding(){
   document.getElementById('obTestStatus').textContent = '';
   updatePdToggle();
   updateMedToggle();
+  updatePlatformToggle();
   renderOnboardStep();
   document.getElementById('onboardLayer').classList.add('open');
   document.getElementById('app').classList.add('frozen-preview');
@@ -2018,6 +2035,9 @@ function renderOnboardStep(){
   document.getElementById('onboardNext').textContent = onboardPos === ONBOARD_PAGE_COUNT - 1 ? 'Finish' : 'Next';
   document.getElementById('onboardProgressBar').style.width = Math.round(((onboardPos+1)/ONBOARD_PAGE_COUNT)*100) + '%';
   document.getElementById('onboardSkip').style.display = (onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE) ? 'block' : 'none';
+  if(onboardPos === 12){
+    updatePlatformToggle();
+  }
   if(onboardPos === 13){
     document.getElementById('obNtfyTopic').value = STATE.settings.ntfyTopic || '';
   }
