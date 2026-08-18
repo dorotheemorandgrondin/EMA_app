@@ -166,6 +166,19 @@
   #daySummaryLayer{ position:fixed; inset:0; background:linear-gradient(180deg, #FFF6E0, var(--paper) 55%); z-index:53; display:none; flex-direction:column; }
   #daySummaryLayer.open{ display:flex; }
   .summary-headline{ font-family:Georgia,serif; font-size:28px; font-weight:800; margin-bottom:6px; }
+  .skip-tutorial-btn{ background:none; border:none; color:var(--ink-soft); font-size:13px; text-decoration:underline; padding:6px 10px; cursor:pointer; white-space:nowrap; }
+  .tutorial-bubble{ background:#fff; border-radius:32px; padding:40px 26px; margin:16px auto 0; max-width:320px; box-shadow:0 6px 24px rgba(0,0,0,0.07); border-top:5px solid var(--teal); }
+  .tutorial-bubble.accent-teal{ border-top-color:var(--teal); }
+  .tutorial-bubble.accent-dawn{ border-top-color:var(--dawn); }
+  .tutorial-bubble.accent-dusk{ border-top-color:var(--dusk); }
+  .tutorial-icon{ font-size:60px; margin-bottom:20px; line-height:1; }
+  .tutorial-text{ font-size:17px; line-height:1.6; color:var(--ink); font-family:Georgia,serif; }
+  .tutorial-example{ margin-top:20px; padding-top:18px; border-top:1px solid var(--line); text-align:left; }
+  .tutorial-example-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:8px; }
+  .tutorial-example-q{ font-family:Georgia,serif; font-size:15px; margin-bottom:10px; }
+  .tutorial-example-slider{ display:flex; align-items:center; gap:10px; font-size:18px; }
+  .tutorial-example-track{ flex:1; height:5px; background:var(--paper-2); border-radius:3px; position:relative; }
+  .tutorial-example-track::after{ content:''; position:absolute; left:45%; top:50%; transform:translate(-50%,-50%); width:16px; height:16px; border-radius:50%; background:var(--teal); }
   .summary-sub{ font-size:14px; color:var(--ink-soft); margin-bottom:28px; }
   .mood-row{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
   .mood-chip{ display:flex; flex-direction:column; align-items:center; gap:4px; }
@@ -259,7 +272,7 @@
         <span>—</span>
         <input type="time" id="setWakeLatest" style="flex:1;" />
       </div>
-      <div class="settings-hint">Your morning check-in window runs from the earliest time up to 30 minutes after the latest time.</div>
+      <div class="settings-hint">Your morning check-in window runs from the earliest time up to 2 hours after the latest time.</div>
     </div>
     <div class="settings-field">
       <label>What time do you usually go to sleep? (earliest — latest)</label>
@@ -268,7 +281,7 @@
         <span>—</span>
         <input type="time" id="setBedLatest" style="flex:1;" />
       </div>
-      <div class="settings-hint">Your evening check-in window runs from 30 minutes before the earliest time up to the latest time. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
+      <div class="settings-hint">Your evening check-in window runs from 2 hours before the earliest time up to the latest time. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
     </div>
     <div class="settings-field">
       <label>Reliable notifications</label>
@@ -278,7 +291,6 @@
         <button class="btn ghost small" id="btnCopyTopic" type="button">Copy</button>
       </div>
     </div>
-    <button class="btn ghost" id="setEnableNotif" style="width:100%; margin-top:8px;">Also enable in-app notifications</button>
     <div class="pilot-row">
       <input type="checkbox" id="setPilotMode" />
       <label for="setPilotMode">Pilot / test mode</label>
@@ -297,6 +309,7 @@
 <div id="onboardLayer">
   <div class="survey-head">
     <div class="survey-progress"><div id="onboardProgressBar" style="width:0%"></div></div>
+    <button class="skip-tutorial-btn" id="onboardSkip" style="display:none;">Skip</button>
   </div>
   <div class="survey-body" id="onboardBody" style="padding-top:22px;">
 
@@ -346,7 +359,73 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="1" style="text-align:center; padding-top:30px;">
+    <div class="onboard-page tutorial-page" data-page="1" style="text-align:center; padding-top:16px;">
+      <div class="tutorial-bubble accent-teal">
+        <div class="tutorial-icon">🕰️</div>
+        <div class="tutorial-text">For this research project, we are curious to know about how you spend your time during your day, and how you feel throughout it.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="2" style="text-align:center; padding-top:16px;">
+      <div class="tutorial-bubble accent-dawn">
+        <div class="tutorial-icon">📝</div>
+        <div class="tutorial-text">We will ask you to complete short questionnaires throughout your day, asking you about what you are doing and how you are feeling.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="3" style="text-align:center; padding-top:16px;">
+      <div class="tutorial-bubble accent-dusk">
+        <div class="tutorial-icon">✅</div>
+        <div class="tutorial-text">Just answer truthfully and to the best of your knowledge.</div>
+        <div class="tutorial-example">
+          <div class="tutorial-example-label">Example question</div>
+          <div class="tutorial-example-q">How are you feeling right now?</div>
+          <div class="tutorial-example-slider"><span>🙁</span><div class="tutorial-example-track"></div><span>🙂</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="4" style="text-align:center; padding-top:16px;">
+      <div class="tutorial-bubble accent-teal">
+        <div class="tutorial-icon">💬</div>
+        <div class="tutorial-text">If there is anything else you'd like the research team to know, just indicate it anytime in the note box on the home screen.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="5" style="text-align:center; padding-top:16px;">
+      <div class="tutorial-bubble accent-dawn">
+        <div class="tutorial-icon">☀️</div>
+        <div class="tutorial-text">At the top you can see your progression. You'll have a morning questionnaire — please answer it every day close to when you wake up, at the same time in your routine, e.g. during your first coffee of the day, or before brushing your teeth.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="6" style="text-align:center; padding-top:16px;">
+      <div class="tutorial-bubble accent-teal">
+        <div class="tutorial-icon">🔔</div>
+        <div class="tutorial-text">Then, you'll have 6 questionnaires at random times during the day. Careful! When you're sent a notification to complete it, you'll have 30 minutes to do it before it closes.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="7" style="text-align:center; padding-top:16px;">
+      <div class="tutorial-bubble accent-dusk">
+        <div class="tutorial-icon">🌙</div>
+        <div class="tutorial-text">Then, during the evening, you'll fill out a final form.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="8" style="text-align:center; padding-top:16px;">
+      <div class="tutorial-bubble accent-dawn">
+        <div class="tutorial-icon">📊✨</div>
+        <div class="tutorial-text">You'll then have access to fun stats about your day!</div>
+        <div class="tutorial-example">
+          <div class="tutorial-example-label">Example</div>
+          <div style="font-family:Georgia,serif; font-weight:800; font-size:16px; margin-bottom:6px;">Great job today! 👏</div>
+          <div style="font-size:22px;">😐 🙂 🙂 😄 🙂 😄 😄 🙂</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="9" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:22px;">One more step</div>
       <div class="settings-hint" style="font-size:15.5px; line-height:1.7; max-width:320px; margin:0 auto;">
         To complete this study, you need to enable notifications — they tell you exactly when each check-in is open.<br><br>
@@ -354,7 +433,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="2">
+    <div class="onboard-page" data-page="10">
       <div class="settings-field">
         <label>Step 1 of 4 — Install the ntfy app</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.7;">
@@ -365,7 +444,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="3">
+    <div class="onboard-page" data-page="11">
       <div class="settings-field">
         <label>Step 2 of 4 — Your unique code</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.6;">This code belongs only to you. Tap Copy, then move to the next step.</div>
@@ -376,7 +455,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="4">
+    <div class="onboard-page" data-page="12">
       <div class="settings-field">
         <label>Step 3 of 4 — Add your code to ntfy</label>
         <div class="settings-hint" style="font-size:15px; line-height:2;">
@@ -388,7 +467,7 @@
       </div>
     </div>
 
-    <div class="onboard-page" data-page="5" style="text-align:center;">
+    <div class="onboard-page" data-page="13" style="text-align:center;">
       <div class="settings-field">
         <label>Step 4 of 4 — Test it</label>
         <div class="settings-hint" style="font-size:15px;">Tap the button below. A notification should arrive on your phone within a few seconds.</div>
@@ -401,13 +480,14 @@
         <div id="obHelpBox" style="display:none; margin-top:16px; text-align:left; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px;">
           <div style="font-weight:700; margin-bottom:6px;">Let's get you help</div>
           <div class="settings-hint" style="font-size:14px; margin-bottom:12px;">If this doesn't work on either wifi or mobile data, check your phone's <b>Private DNS</b> setting (Settings → Network & Internet → Private DNS) — set it to "Automatic" or "Off" and try again. Otherwise, reach out and we'll help directly.</div>
+          <div class="settings-hint" style="font-size:13px; margin-bottom:12px; font-style:italic;">In the meantime, for piloting purposes: you can set manual alarms/timers on your phone for your check-in times shown on the home screen. Not ideal, but it'll keep things on track while we sort this out.</div>
           <a class="btn ghost" id="obWatchVideo" style="display:block; text-align:center; text-decoration:none; margin-bottom:8px;" href="#">Watch a video walkthrough</a>
           <a class="btn" id="obEmailHelp" style="display:block; text-align:center; text-decoration:none;" href="#">Email for help</a>
         </div>
       </div>
     </div>
 
-    <div class="onboard-page" data-page="6" style="text-align:center; padding-top:30px;">
+    <div class="onboard-page" data-page="14" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:24px;">You're all set! 🎉</div>
       <div class="settings-hint" style="font-size:15.5px;">Tap Finish to start using the app.</div>
     </div>
@@ -533,10 +613,20 @@ function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
 
 /* Window boundaries, in minutes-since-midnight. */
 function morningWindow(){
-  return { start: toMin(STATE.settings.wakeEarliest), end: toMin(STATE.settings.wakeLatest) + 30 };
+  return { start: toMin(STATE.settings.wakeEarliest), end: toMin(STATE.settings.wakeLatest) + 120 };
 }
 function eveningWindow(){
-  return { start: toMin(STATE.settings.bedEarliest) - 30, end: toMin(STATE.settings.bedLatest) };
+  return { start: toMin(STATE.settings.bedEarliest) - 120, end: toMin(STATE.settings.bedLatest) };
+}
+/* Beeps still use a tighter 30-min buffer around the wake/bed range, kept
+   separate from the (now more generous) questionnaire availability windows
+   above — so extending the morning/evening windows doesn't compress the
+   time available for the 6 daily beeps. */
+function beepSpanBoundaries(){
+  return {
+    start: toMin(STATE.settings.wakeLatest) + 30,
+    end: toMin(STATE.settings.bedEarliest) - 30,
+  };
 }
 function checkpointStatus(win, done){
   if(done) return 'done';
@@ -565,8 +655,9 @@ function ensureToday(){
 }
 
 function generateBeepTimes(){
-  const startMin = morningWindow().end; // beeps start once the morning window closes
-  const endMin = eveningWindow().start;  // and stop once the evening window opens
+  const b = beepSpanBoundaries();
+  const startMin = b.start;
+  const endMin = b.end;
   const span = Math.max(endMin - startMin, MIN_GAP_MIN*BEEPS_PER_DAY);
   const slot = span / BEEPS_PER_DAY;
   const times = [];
@@ -694,7 +785,9 @@ function checkpointsForDay(beepTimes){
   return points;
 }
 
+let ntfySchedulingInProgress = false;
 async function scheduleNtfyUpcoming(){
+  if(ntfySchedulingInProgress) return; // a call is already in flight — don't send duplicates
   if(!STATE.settings.ntfyTopic) return;
   if(!navigator.onLine) return;
 
@@ -703,6 +796,9 @@ async function scheduleNtfyUpcoming(){
   const targetEndKey = todayStr(new Date(todayMidnight.getTime() + NTFY_ROLL_AHEAD_DAYS*86400000));
 
   if(STATE.ntfyScheduledThrough && STATE.ntfyScheduledThrough >= targetEndKey) return; // buffer already full
+
+  ntfySchedulingInProgress = true;
+  try{
 
   let startKey = todayKey;
   if(STATE.ntfyScheduledThrough && STATE.ntfyScheduledThrough >= todayKey){
@@ -757,6 +853,10 @@ async function scheduleNtfyUpcoming(){
   if(lastGoodKey){
     STATE.ntfyScheduledThrough = lastGoodKey;
     saveState();
+  }
+
+  }finally{
+    ntfySchedulingInProgress = false;
   }
 }
 
@@ -1536,34 +1636,56 @@ function moodEmoji(val){
   if(val < 80) return '🙂';
   return '😄';
 }
+const CATEGORY_ICONS = {
+  'Social activity':'👥', 'Household chore':'🧹', 'Working':'💼', 'Resting':'😌',
+  'Sport':'🏃', 'Hobby':'🎨', 'Self-care':'🧴', 'Another activity':'✨',
+};
+let _activityCategoryLookup = null;
+function categoryForActivity(name){
+  if(!_activityCategoryLookup){
+    _activityCategoryLookup = {};
+    activityChoiceList().forEach(item=>{ _activityCategoryLookup[item.label.toLowerCase()] = item.category; });
+  }
+  return _activityCategoryLookup[String(name).toLowerCase()] || null; // null for free-typed 'other' activities we can't match back
+}
+function avgField(entries, field){
+  const vals = entries.map(e=>Number(e[field])).filter(v=>!isNaN(v));
+  return vals.length ? Math.round(vals.reduce((s,v)=>s+v,0)/vals.length) : null;
+}
 function computeDaySummary(){
   const date = STATE.day.date;
   const todays = STATE.entries.filter(e=>e.date===date);
   const totalCheckins = 1 + BEEPS_PER_DAY + 1;
   const completed = todays.filter(e=>e.type==='morning' || e.type==='beep' || e.type==='evening').length;
+  const beepEs = todays.filter(e=>e.type==='beep').sort((a,b)=>(a.tag||'').localeCompare(b.tag||'', undefined, {numeric:true}));
+  const beepsCompleted = beepEs.length;
 
   const moodSeries = [];
   const morningE = todays.find(e=>e.type==='morning');
   if(morningE && morningE.mood !== undefined) moodSeries.push({ label:'AM', val:Number(morningE.mood) });
-  const beepEs = todays.filter(e=>e.type==='beep').sort((a,b)=>(a.tag||'').localeCompare(b.tag||'', undefined, {numeric:true}));
   beepEs.forEach((e,i)=>{ if(e.mood_beep !== undefined) moodSeries.push({ label:String(i+1), val:Number(e.mood_beep) }); });
   const eveningE = todays.find(e=>e.type==='evening');
   if(eveningE && eveningE.mood_evening !== undefined) moodSeries.push({ label:'PM', val:Number(eveningE.mood_evening) });
 
   const validMoods = moodSeries.filter(m=>!isNaN(m.val));
   const avgMood = validMoods.length ? Math.round(validMoods.reduce((s,m)=>s+m.val,0)/validMoods.length) : null;
+  const avgEnergy = avgField(beepEs, 'energy');
+  const avgConcentration = avgField(beepEs, 'concentration');
 
   const activityCounts = {};
+  const categorySet = new Set();
   beepEs.forEach(e=>{
     ['nextActivity','elseActivity'].forEach(key=>{
       if(e[key]) String(e[key]).split(';').map(s=>s.trim()).filter(Boolean).forEach(a=>{
         activityCounts[a] = (activityCounts[a]||0) + 1;
+        const cat = categoryForActivity(a);
+        if(cat) categorySet.add(cat);
       });
     });
   });
   const topActivity = Object.entries(activityCounts).sort((a,b)=>b[1]-a[1])[0] || null;
 
-  return { completed, totalCheckins, moodSeries, avgMood, topActivity };
+  return { completed, totalCheckins, beepsCompleted, moodSeries, avgMood, avgEnergy, avgConcentration, categories:[...categorySet], topActivity };
 }
 function showDaySummary(){
   const s = computeDaySummary();
@@ -1577,13 +1699,18 @@ function showDaySummary(){
   }).join('');
 
   const stats = [];
-  stats.push(`<div class="summary-stat">✅ ${s.completed} of ${s.totalCheckins} check-ins completed</div>`);
-  if(s.avgMood !== null) stats.push(`<div class="summary-stat">${moodEmoji(s.avgMood)} Average mood today: ${s.avgMood}%</div>`);
-  if(s.topActivity) stats.push(`<div class="summary-stat">⭐ Most logged activity: ${escHtml(s.topActivity[0])} (${s.topActivity[1]}×)</div>`);
+  if(s.avgMood !== null) stats.push(`<div class="summary-stat">${moodEmoji(s.avgMood)} Average mood: ${s.avgMood}%</div>`);
+  if(s.avgEnergy !== null) stats.push(`<div class="summary-stat">⚡ Average energy: ${s.avgEnergy}%</div>`);
+  if(s.avgConcentration !== null) stats.push(`<div class="summary-stat">🎯 Average concentration: ${s.avgConcentration}%</div>`);
+  if(s.categories.length) {
+    const catTags = s.categories.map(c=>`${CATEGORY_ICONS[c]||'•'} ${escHtml(c)}`).join(' &nbsp;·&nbsp; ');
+    stats.push(`<div class="summary-stat">${catTags}</div>`);
+  }
+  stats.push(`<div class="summary-stat">🔔 ${s.beepsCompleted} of ${BEEPS_PER_DAY} beeps completed</div>`);
 
   document.getElementById('daySummaryBody').innerHTML = `
     <div class="summary-headline">${headline}</div>
-    <div class="summary-sub">Here's your day at a glance</div>
+    <div class="summary-sub" style="font-weight:700; font-size:16px; color:var(--ink);">Your day in a glance</div>
     ${s.moodSeries.length ? `<div class="mood-row">${moodRow}</div>` : ''}
     ${stats.join('')}
   `;
@@ -1761,11 +1888,6 @@ document.getElementById('btnCopyTopic').onclick = async ()=>{
   catch(e){ toast('Copy failed — select and copy manually'); }
 };
 
-document.getElementById('setEnableNotif').onclick = async ()=>{
-  const granted = await requestNotifPermission();
-  toast(granted ? 'Notifications enabled' : 'Notifications not enabled');
-};
-
 document.getElementById('settingsSave').onclick = ()=>{
   const pid = document.getElementById('setParticipantId').value.trim();
   const wakeEarliest = document.getElementById('setWakeEarliest').value;
@@ -1836,7 +1958,10 @@ document.getElementById('instructionsClose').onclick = ()=>{
 };
 
 /* ---------------- First-time onboarding wizard ---------------- */
-const ONBOARD_PAGE_COUNT = 7;
+const ONBOARD_PAGE_COUNT = 15;
+const TUTORIAL_FIRST_PAGE = 1;
+const TUTORIAL_LAST_PAGE = 8;
+const NOTIF_INTRO_PAGE = 9;
 let onboardPos = 0;
 
 function openOnboarding(){
@@ -1864,11 +1989,16 @@ function renderOnboardStep(){
   document.getElementById('onboardBack').style.visibility = onboardPos === 0 ? 'hidden' : 'visible';
   document.getElementById('onboardNext').textContent = onboardPos === ONBOARD_PAGE_COUNT - 1 ? 'Finish' : 'Next';
   document.getElementById('onboardProgressBar').style.width = Math.round(((onboardPos+1)/ONBOARD_PAGE_COUNT)*100) + '%';
-  if(onboardPos === 3){
+  document.getElementById('onboardSkip').style.display = (onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE) ? 'block' : 'none';
+  if(onboardPos === 11){
     document.getElementById('obNtfyTopic').value = STATE.settings.ntfyTopic || '';
   }
   document.getElementById('onboardBody').scrollTop = 0;
 }
+document.getElementById('onboardSkip').onclick = ()=>{
+  onboardPos = NOTIF_INTRO_PAGE;
+  renderOnboardStep();
+};
 
 function validateOnboardInfoPage(){
   const pid = document.getElementById('obParticipantId').value.trim();
