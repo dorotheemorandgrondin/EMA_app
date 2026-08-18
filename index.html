@@ -167,18 +167,24 @@
   #daySummaryLayer.open{ display:flex; }
   .summary-headline{ font-family:Georgia,serif; font-size:28px; font-weight:800; margin-bottom:6px; }
   .skip-tutorial-btn{ background:none; border:none; color:var(--ink-soft); font-size:13px; text-decoration:underline; padding:6px 10px; cursor:pointer; white-space:nowrap; }
-  .tutorial-bubble{ background:#fff; border-radius:32px; padding:40px 26px; margin:16px auto 0; max-width:320px; box-shadow:0 6px 24px rgba(0,0,0,0.07); border-top:5px solid var(--teal); }
-  .tutorial-bubble.accent-teal{ border-top-color:var(--teal); }
-  .tutorial-bubble.accent-dawn{ border-top-color:var(--dawn); }
-  .tutorial-bubble.accent-dusk{ border-top-color:var(--dusk); }
-  .tutorial-icon{ font-size:60px; margin-bottom:20px; line-height:1; }
-  .tutorial-text{ font-size:17px; line-height:1.6; color:var(--ink); font-family:Georgia,serif; }
-  .tutorial-example{ margin-top:20px; padding-top:18px; border-top:1px solid var(--line); text-align:left; }
+  #onboardLayer.spotlight-mode{ background:transparent; }
+  #tutorialDim{ position:fixed; inset:0; background:rgba(20,20,20,0.74); z-index:55; pointer-events:none; }
+  #tutorialSpotlightHole{ position:fixed; border-radius:20px; box-shadow:0 0 0 9999px rgba(20,20,20,0.74); z-index:55; pointer-events:none; transition:left .25s ease, top .25s ease, width .25s ease, height .25s ease; }
+  .tutorial-tooltip{ position:fixed; z-index:57; background:#fff; border-radius:18px; padding:18px 20px; box-shadow:0 10px 30px rgba(0,0,0,0.22); max-width:320px; margin:0 auto; text-align:center; }
+  .tutorial-tooltip-centered{ top:50%; left:50%; right:auto; bottom:auto; transform:translate(-50%,-50%); }
+  .tutorial-tooltip.arrow-up::before{ content:''; position:absolute; top:-9px; left:50%; transform:translateX(-50%); border-left:10px solid transparent; border-right:10px solid transparent; border-bottom:10px solid #fff; }
+  .tutorial-tooltip.arrow-down::after{ content:''; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%); border-left:10px solid transparent; border-right:10px solid transparent; border-top:10px solid #fff; }
+  .tutorial-icon{ font-size:44px; margin-bottom:14px; line-height:1; }
+  .tutorial-text{ font-size:16px; line-height:1.55; color:var(--ink); font-family:Georgia,serif; }
+  .tutorial-example{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); text-align:left; }
   .tutorial-example-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:8px; }
-  .tutorial-example-q{ font-family:Georgia,serif; font-size:15px; margin-bottom:10px; }
-  .tutorial-example-slider{ display:flex; align-items:center; gap:10px; font-size:18px; }
-  .tutorial-example-track{ flex:1; height:5px; background:var(--paper-2); border-radius:3px; position:relative; }
-  .tutorial-example-track::after{ content:''; position:absolute; left:45%; top:50%; transform:translate(-50%,-50%); width:16px; height:16px; border-radius:50%; background:var(--teal); }
+  .tutorial-example-q{ font-family:Georgia,serif; font-size:14.5px; margin-bottom:8px; }
+  .tutorial-example-chips{ font-size:22px; letter-spacing:8px; text-align:center; }
+  .tutorial-progress-example{ display:flex; gap:6px; justify-content:center; margin-top:4px; }
+  .mini-dot{ width:15px; height:15px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; }
+  .mini-dot.done{ background:var(--good); border-color:var(--good); }
+  .mini-dot.due{ background:#fff; border-color:var(--amber); box-shadow:0 0 0 3px rgba(217,134,59,0.16); }
+  .mini-dot.upcoming{ background:#fff; }
   .summary-sub{ font-size:14px; color:var(--ink-soft); margin-bottom:28px; }
   .mood-row{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
   .mood-chip{ display:flex; flex-direction:column; align-items:center; gap:4px; }
@@ -307,6 +313,8 @@
 </div>
 
 <div id="onboardLayer">
+  <div id="tutorialDim" style="display:none;"></div>
+  <div id="tutorialSpotlightHole" style="display:none;"></div>
   <div class="survey-head">
     <div class="survey-progress"><div id="onboardProgressBar" style="width:0%"></div></div>
     <button class="skip-tutorial-btn" id="onboardSkip" style="display:none;">Skip</button>
@@ -359,68 +367,71 @@
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="1" style="text-align:center; padding-top:16px;">
-      <div class="tutorial-bubble accent-teal">
-        <div class="tutorial-icon">🕰️</div>
+    <div class="onboard-page tutorial-page" data-page="1">
+      <div class="tutorial-tooltip tutorial-tooltip-centered">
+        <div class="tutorial-icon" style="font-size:44px;">🕰️</div>
         <div class="tutorial-text">For this research project, we are curious to know about how you spend your time during your day, and how you feel throughout it.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="2" style="text-align:center; padding-top:16px;">
-      <div class="tutorial-bubble accent-dawn">
-        <div class="tutorial-icon">📝</div>
+    <div class="onboard-page tutorial-page" data-page="2">
+      <div class="tutorial-tooltip tutorial-tooltip-centered">
+        <div class="tutorial-icon" style="font-size:44px;">📝</div>
         <div class="tutorial-text">We will ask you to complete short questionnaires throughout your day, asking you about what you are doing and how you are feeling.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="3" style="text-align:center; padding-top:16px;">
-      <div class="tutorial-bubble accent-dusk">
-        <div class="tutorial-icon">✅</div>
+    <div class="onboard-page tutorial-page" data-page="3" data-target="#todayCards">
+      <div class="tutorial-tooltip">
         <div class="tutorial-text">Just answer truthfully and to the best of your knowledge.</div>
         <div class="tutorial-example">
           <div class="tutorial-example-label">Example question</div>
-          <div class="tutorial-example-q">How are you feeling right now?</div>
-          <div class="tutorial-example-slider"><span>🙁</span><div class="tutorial-example-track"></div><span>🙂</span></div>
+          <div class="tutorial-example-q">What did you do in the last 2 hours?</div>
+          <div class="tutorial-example-chips">🍳 💼 🏃 🛋️ ➕</div>
         </div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="4" style="text-align:center; padding-top:16px;">
-      <div class="tutorial-bubble accent-teal">
-        <div class="tutorial-icon">💬</div>
-        <div class="tutorial-text">If there is anything else you'd like the research team to know, just indicate it anytime in the note box on the home screen.</div>
+    <div class="onboard-page tutorial-page" data-page="4" data-target=".note-card">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-text">If there is anything else you'd like the research team to know, just indicate it anytime in the note box below.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="5" style="text-align:center; padding-top:16px;">
-      <div class="tutorial-bubble accent-dawn">
-        <div class="tutorial-icon">☀️</div>
+    <div class="onboard-page tutorial-page" data-page="5" data-target=".arc-card">
+      <div class="tutorial-tooltip">
         <div class="tutorial-text">At the top you can see your progression. You'll have a morning questionnaire — please answer it every day close to when you wake up, at the same time in your routine, e.g. during your first coffee of the day, or before brushing your teeth.</div>
+        <div class="tutorial-example">
+          <div class="tutorial-example-label">Example, later in the day</div>
+          <div class="tutorial-progress-example">
+            <div class="mini-dot done">✓</div><div class="mini-dot done">✓</div><div class="mini-dot done">✓</div><div class="mini-dot due"></div><div class="mini-dot upcoming"></div><div class="mini-dot upcoming"></div><div class="mini-dot upcoming"></div><div class="mini-dot upcoming"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="6" style="text-align:center; padding-top:16px;">
-      <div class="tutorial-bubble accent-teal">
-        <div class="tutorial-icon">🔔</div>
+    <div class="onboard-page tutorial-page" data-page="6" data-target="#todayCards">
+      <div class="tutorial-tooltip">
         <div class="tutorial-text">Then, you'll have 6 questionnaires at random times during the day. Careful! When you're sent a notification to complete it, you'll have 30 minutes to do it before it closes.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="7" style="text-align:center; padding-top:16px;">
-      <div class="tutorial-bubble accent-dusk">
-        <div class="tutorial-icon">🌙</div>
+    <div class="onboard-page tutorial-page" data-page="7" data-target="#todayCards">
+      <div class="tutorial-tooltip">
         <div class="tutorial-text">Then, during the evening, you'll fill out a final form.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="8" style="text-align:center; padding-top:16px;">
-      <div class="tutorial-bubble accent-dawn">
-        <div class="tutorial-icon">📊✨</div>
+    <div class="onboard-page tutorial-page" data-page="8">
+      <div class="tutorial-tooltip tutorial-tooltip-centered">
+        <div class="tutorial-icon" style="font-size:44px;">📊✨</div>
         <div class="tutorial-text">You'll then have access to fun stats about your day!</div>
         <div class="tutorial-example">
           <div class="tutorial-example-label">Example</div>
-          <div style="font-family:Georgia,serif; font-weight:800; font-size:16px; margin-bottom:6px;">Great job today! 👏</div>
-          <div style="font-size:22px;">😐 🙂 🙂 😄 🙂 😄 😄 🙂</div>
+          <div style="font-family:Georgia,serif; font-weight:700; font-size:14.5px; margin-bottom:8px;">Here's what you did today:</div>
+          <div style="font-size:15px; margin-bottom:14px;">🏃 Sport &nbsp; 💼 Work &nbsp; 👥 Social activity</div>
+          <div class="tutorial-example-label">Mood tracker</div>
+          <div style="font-size:20px;">😐 🙂 🙂 😄 🙂 😄 😄 🙂</div>
         </div>
       </div>
     </div>
@@ -1994,11 +2005,76 @@ function renderOnboardStep(){
     document.getElementById('obNtfyTopic').value = STATE.settings.ntfyTopic || '';
   }
   document.getElementById('onboardBody').scrollTop = 0;
+  updateTutorialSpotlight();
 }
 document.getElementById('onboardSkip').onclick = ()=>{
   onboardPos = NOTIF_INTRO_PAGE;
   renderOnboardStep();
 };
+
+/* Coach-mark spotlight: during the tutorial, the real home screen (already
+   rendered underneath in #app) is dimmed, with either a bright cutout around
+   a specific element (data-target on the active page) or a uniform dim with
+   a centered message for generic, non-pointing steps. */
+function updateTutorialSpotlight(){
+  const inTutorial = onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE;
+  document.getElementById('onboardLayer').classList.toggle('spotlight-mode', inTutorial);
+  const dim = document.getElementById('tutorialDim');
+  const hole = document.getElementById('tutorialSpotlightHole');
+  if(!inTutorial){
+    dim.style.display = 'none';
+    hole.style.display = 'none';
+    return;
+  }
+  const pageEl = document.querySelector('.onboard-page[data-page="'+onboardPos+'"]');
+  const targetSel = pageEl ? pageEl.dataset.target : null;
+  const tooltip = pageEl ? pageEl.querySelector('.tutorial-tooltip') : null;
+  const target = targetSel ? document.querySelector(targetSel) : null;
+
+  if(target){
+    dim.style.display = 'none';
+    hole.style.display = 'block';
+    const rect = target.getBoundingClientRect();
+    const pad = 8;
+    hole.style.left = (rect.left - pad) + 'px';
+    hole.style.top = (rect.top - pad) + 'px';
+    hole.style.width = (rect.width + pad*2) + 'px';
+    hole.style.height = (rect.height + pad*2) + 'px';
+
+    if(tooltip){
+      tooltip.classList.remove('tutorial-tooltip-centered');
+      tooltip.style.left = '20px';
+      tooltip.style.right = '20px';
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      if(spaceBelow >= 200 || spaceBelow > spaceAbove){
+        tooltip.style.top = (rect.bottom + pad + 16) + 'px';
+        tooltip.style.bottom = 'auto';
+        tooltip.classList.add('arrow-up');
+        tooltip.classList.remove('arrow-down');
+      } else {
+        tooltip.style.bottom = (window.innerHeight - rect.top + pad + 16) + 'px';
+        tooltip.style.top = 'auto';
+        tooltip.classList.add('arrow-down');
+        tooltip.classList.remove('arrow-up');
+      }
+    }
+  } else {
+    dim.style.display = 'block';
+    hole.style.display = 'none';
+    if(tooltip){
+      tooltip.classList.add('tutorial-tooltip-centered');
+      tooltip.classList.remove('arrow-up','arrow-down');
+      tooltip.style.top = '';
+      tooltip.style.left = '';
+      tooltip.style.right = '';
+      tooltip.style.bottom = '';
+    }
+  }
+}
+window.addEventListener('resize', ()=>{
+  if(onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE) updateTutorialSpotlight();
+});
 
 function validateOnboardInfoPage(){
   const pid = document.getElementById('obParticipantId').value.trim();
