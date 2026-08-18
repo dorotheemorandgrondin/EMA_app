@@ -35,6 +35,7 @@
   h1,h2,h3{ font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; font-weight:600; margin:0; letter-spacing:-0.01em;}
   .mono{ font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
   #app{ max-width: 480px; margin:0 auto; padding: 20px 18px 8px; }
+  #app.frozen-preview{ height:100vh; overflow-y:hidden; position:relative; touch-action:none; }
 
   .topbar{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
   .topbar .clock{ font-size:13px; color:var(--ink-soft); }
@@ -166,19 +167,25 @@
   #daySummaryLayer{ position:fixed; inset:0; background:linear-gradient(180deg, #FFF6E0, var(--paper) 55%); z-index:53; display:none; flex-direction:column; }
   #daySummaryLayer.open{ display:flex; }
   .summary-headline{ font-family:Georgia,serif; font-size:28px; font-weight:800; margin-bottom:6px; }
-  .skip-tutorial-btn{ background:rgba(255,255,255,0.95); border:none; color:var(--ink); font-size:13px; font-weight:600; text-decoration:none; padding:8px 14px; border-radius:20px; cursor:pointer; white-space:nowrap; box-shadow:0 2px 10px rgba(0,0,0,0.12); }
-  #onboardLayer.spotlight-mode .survey-foot{ background:rgba(255,255,255,0.97); backdrop-filter:blur(6px); border-radius:22px 22px 0 0; padding-top:16px; box-shadow:0 -4px 20px rgba(0,0,0,0.12); }
-  #onboardLayer.spotlight-mode .survey-foot .btn.ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--line); }
-  #onboardLayer.spotlight-mode .survey-progress{ background:rgba(255,255,255,0.35); }
+  .skip-tutorial-btn{ background:#fff; border:2px solid var(--amber); color:var(--amber); font-size:13.5px; font-weight:800; text-decoration:none; padding:9px 16px; border-radius:22px; cursor:pointer; white-space:nowrap; box-shadow:0 3px 12px rgba(0,0,0,0.18); }
+  #onboardLayer.spotlight-mode .survey-foot{ background:#fff; border-radius:24px 24px 0 0; padding:18px 20px 26px; box-shadow:0 -6px 24px rgba(0,0,0,0.25); gap:12px; }
+  #onboardLayer.spotlight-mode .survey-foot .btn{ font-size:16px; font-weight:800; padding:15px; border-radius:16px; }
+  #onboardLayer.spotlight-mode .survey-foot .btn.ghost{ background:#fff; color:var(--teal-deep); border:2.5px solid var(--teal); }
+  #onboardLayer.spotlight-mode .survey-foot #onboardNext{ background:var(--amber); color:#fff; box-shadow:0 4px 14px rgba(217,134,59,0.4); }
+  #onboardLayer.spotlight-mode .survey-progress{ background:rgba(255,255,255,0.4); height:5px; }
+  #onboardLayer.spotlight-mode .survey-progress > div{ background:var(--amber); }
   #onboardLayer.spotlight-mode{ background:transparent; }
   #tutorialDim{ position:fixed; inset:0; background:rgba(20,20,20,0.74); z-index:55; pointer-events:none; }
   #tutorialSpotlightHole{ position:fixed; border-radius:20px; box-shadow:0 0 0 9999px rgba(20,20,20,0.74); z-index:55; pointer-events:none; transition:left .25s ease, top .25s ease, width .25s ease, height .25s ease; }
-  .tutorial-tooltip{ position:fixed; z-index:57; background:#fff; border-radius:18px; padding:18px 20px; box-shadow:0 10px 30px rgba(0,0,0,0.22); max-width:320px; margin:0 auto; text-align:center; }
+  .tutorial-tooltip{ position:fixed; z-index:57; background:#fff; border-radius:20px; padding:22px 22px; box-shadow:0 10px 34px rgba(0,0,0,0.28); max-width:330px; margin:0 auto; text-align:center; border-top:6px solid var(--amber); }
+  .tutorial-tooltip.accent-teal{ border-top-color:var(--teal); }
+  .tutorial-tooltip.accent-dawn{ border-top-color:var(--dawn); }
+  .tutorial-tooltip.accent-dusk{ border-top-color:var(--dusk); }
   .tutorial-tooltip-centered{ top:50%; left:50%; right:auto; bottom:auto; transform:translate(-50%,-50%); }
   .tutorial-tooltip.arrow-up::before{ content:''; position:absolute; top:-9px; left:50%; transform:translateX(-50%); border-left:10px solid transparent; border-right:10px solid transparent; border-bottom:10px solid #fff; }
   .tutorial-tooltip.arrow-down::after{ content:''; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%); border-left:10px solid transparent; border-right:10px solid transparent; border-top:10px solid #fff; }
-  .tutorial-icon{ font-size:44px; margin-bottom:14px; line-height:1; }
-  .tutorial-text{ font-size:16px; line-height:1.55; color:var(--ink); font-family:Georgia,serif; }
+  .tutorial-icon{ font-size:48px; margin-bottom:12px; line-height:1; }
+  .tutorial-text{ font-size:19px; line-height:1.5; color:var(--ink); font-family:Georgia,serif; font-weight:600; }
   .tutorial-example{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); text-align:left; }
   .tutorial-example-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:8px; }
   .tutorial-example-q{ font-family:Georgia,serif; font-size:14.5px; margin-bottom:8px; }
@@ -371,55 +378,64 @@
     </div>
 
     <div class="onboard-page tutorial-page" data-page="1">
-      <div class="tutorial-tooltip tutorial-tooltip-centered">
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-teal">
+        <div class="tutorial-icon">🕰️✨</div>
         <div class="tutorial-text">For this research project, we are interested in how you spend your time during your day, and how you feel throughout it.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="2">
-      <div class="tutorial-tooltip tutorial-tooltip-centered">
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dawn">
+        <div class="tutorial-icon">📝💭</div>
         <div class="tutorial-text">We will ask you to complete short questionnaires throughout your day, asking you about what you are doing and how you are feeling.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="3">
-      <div class="tutorial-tooltip tutorial-tooltip-centered">
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dusk">
+        <div class="tutorial-icon">💛</div>
         <div class="tutorial-text">Just answer truthfully and to the best of your knowledge.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="4" data-target=".arc-card">
+    <div class="onboard-page tutorial-page" data-page="4" data-target="#cardMorning">
       <div class="tutorial-tooltip">
-        <div class="tutorial-text">At the top, you can see your progression throughout the day.</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="5" data-target="#cardMorning">
-      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">☀️</div>
         <div class="tutorial-text">You'll have a morning questionnaire — please answer it every day close to when you wake up, at the same time in your routine, e.g. during your first coffee of the day, or before brushing your teeth.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="6" data-target-all=".card-beep">
+    <div class="onboard-page tutorial-page" data-page="5" data-target-all=".card-beep">
       <div class="tutorial-tooltip">
+        <div class="tutorial-icon">🔔</div>
         <div class="tutorial-text">Then, you'll have 6 questionnaires at random times during the day. Careful — when you're sent a notification to complete one, you'll have 30 minutes to do it before it closes.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="7" data-target="#cardEvening">
+    <div class="onboard-page tutorial-page" data-page="6" data-target="#cardEvening">
       <div class="tutorial-tooltip">
+        <div class="tutorial-icon">🌙</div>
         <div class="tutorial-text">Then, during the evening, you'll fill out a final form.</div>
       </div>
     </div>
 
+    <div class="onboard-page tutorial-page" data-page="7" data-target=".arc-card">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">👆</div>
+        <div class="tutorial-text">At the top, you can see your progression throughout the day.</div>
+      </div>
+    </div>
+
     <div class="onboard-page tutorial-page" data-page="8">
-      <div class="tutorial-tooltip tutorial-tooltip-centered">
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-teal">
+        <div class="tutorial-icon">📊🎉</div>
         <div class="tutorial-text">At the end of the day, you'll see fun stats about your day!</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="9" data-target=".note-card">
       <div class="tutorial-tooltip">
+        <div class="tutorial-icon">💬</div>
         <div class="tutorial-text">If there is anything else you'd like the research team to know, just indicate it anytime in the note box below.</div>
       </div>
     </div>
@@ -1981,7 +1997,8 @@ function openOnboarding(){
   updateMedToggle();
   renderOnboardStep();
   document.getElementById('onboardLayer').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  document.getElementById('app').classList.add('frozen-preview');
+  document.getElementById('app').scrollTop = 0;
 }
 
 function renderOnboardStep(){
@@ -2021,6 +2038,22 @@ function updateTutorialSpotlight(){
   const targetSel = pageEl ? pageEl.dataset.target : null;
   const targetAllSel = pageEl ? pageEl.dataset.targetAll : null;
   const tooltip = pageEl ? pageEl.querySelector('.tutorial-tooltip') : null;
+
+  // Pan the frozen preview to bring the relevant section into view first —
+  // the person can't scroll it themselves, but the tutorial can, since
+  // different steps point at things at different heights on the real page
+  // (e.g. the evening card and note box sit well below the fold).
+  const scrollTarget = targetAllSel ? document.querySelector(targetAllSel) : (targetSel ? document.querySelector(targetSel) : null);
+  const appEl = document.getElementById('app');
+  if(scrollTarget){
+    const HEADER_SPACE = 60;
+    const r0 = scrollTarget.getBoundingClientRect();
+    const a0 = appEl.getBoundingClientRect();
+    const targetTopInApp = (r0.top - a0.top) + appEl.scrollTop;
+    appEl.scrollTop = Math.max(0, targetTopInApp - HEADER_SPACE);
+  } else {
+    appEl.scrollTop = 0;
+  }
 
   let rect = null;
   if(targetAllSel){
@@ -2182,7 +2215,7 @@ function finishOnboarding(){
   saveState();
   scheduleNtfyUpcoming();
   document.getElementById('onboardLayer').classList.remove('open');
-  document.body.style.overflow = '';
+  document.getElementById('app').classList.remove('frozen-preview');
   renderHome();
   toast('All set — welcome!');
 }
