@@ -181,6 +181,9 @@
   #onboardLayer.spotlight-mode .survey-progress{ background:rgba(255,255,255,0.4); height:5px; }
   #onboardLayer.spotlight-mode .survey-progress > div{ background:var(--amber); }
   #onboardLayer.spotlight-mode{ background:transparent; }
+  /* The general intro screens (no specific element to point at) stay a
+     clean, plain page — no dimmed home screen behind them. */
+  #onboardLayer.spotlight-mode.no-target{ background:var(--paper); }
   #tutorialDim{ position:fixed; inset:0; background:rgba(20,20,20,0.74); z-index:55; pointer-events:none; }
   #tutorialSpotlightHole{ position:fixed; border-radius:20px; box-shadow:0 0 0 9999px rgba(20,20,20,0.74); z-index:55; pointer-events:none; transition:left .25s ease, top .25s ease, width .25s ease, height .25s ease; }
   .tutorial-tooltip{ position:fixed; z-index:57; background:#fff; border-radius:20px; padding:22px 22px; box-shadow:0 10px 34px rgba(0,0,0,0.28); max-width:330px; max-height:calc(100vh - 190px); overflow-y:auto; margin:0 auto; text-align:center; border-top:6px solid var(--amber); }
@@ -334,70 +337,70 @@
 
     <div class="onboard-page tutorial-page active" data-page="0">
       <div class="tutorial-tooltip tutorial-tooltip-centered accent-teal">
-        <div class="tutorial-icon">🕰️</div>
-        <div class="tutorial-text">For this project, we are interested in learning more about how you spend your time during the day.</div>
+        <div class="tutorial-icon">👋</div>
+        <div class="tutorial-text">Hi! Welcome to our study. We are glad you are here :)</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="1">
-      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dawn">
-        <div class="tutorial-icon">📝</div>
-        <div class="tutorial-text">We will ask you to complete short questionnaires throughout the day, asking you about what you are doing and how you are feeling.</div>
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-teal">
+        <div class="tutorial-icon">🕰️</div>
+        <div class="tutorial-text">In this study, we are interested in learning more about how you spend your time during the day.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="2">
-      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dusk">
-        <div class="tutorial-text">Just answer truthfully and to the best of your knowledge.</div>
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dawn">
+        <div class="tutorial-icon">📝</div>
+        <div class="tutorial-text">For seven days, we will ask you to complete short questionnaires throughout the day, asking you about the activities you are doing and how you feel.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="3" data-target="#cardMorning">
+    <div class="onboard-page tutorial-page" data-page="3">
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dusk">
+        <div class="tutorial-text">Your role is simply to answer truthfully, and to the best of your knowledge!</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="4" data-target="#cardMorning">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">☀️</div>
-        <div class="tutorial-text">You'll have a morning questionnaire — please answer it every day around the same time during your morning routine (e.g., during your first coffee, or after brushing your teeth).</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="4" data-target-all=".card-beep">
-      <div class="tutorial-tooltip">
-        <div class="tutorial-icon">🔔</div>
-        <div class="tutorial-text">Then, you'll have 6 questionnaires to fill out at random times during the day. We will send you a notification when it's time to fill it.</div>
+        <div class="tutorial-text">In the morning, you will have a questionnaire to answer. Please answer it everyday around the same time (for example, while you take your first coffee, or after brushing your teeth).</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="5" data-target-all=".card-beep">
       <div class="tutorial-tooltip">
-        <div class="tutorial-icon">⚠️</div>
-        <div class="tutorial-text">Careful! When you're sent a notification, you'll have 30 min to complete the questionnaire before it closes.</div>
+        <div class="tutorial-icon">🔔</div>
+        <div class="tutorial-text">Then, you will have 6 questionnaires to fill out at random times throughout the day. We will send you a notification on your phone when it is time to fill them.</div>
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="6" data-target="#cardEvening">
+    <div class="onboard-page tutorial-page" data-page="6" data-target-all=".card-beep">
       <div class="tutorial-tooltip">
-        <div class="tutorial-icon">🌙</div>
-        <div class="tutorial-text">Finally, during the evening, you'll have one final form to fill. Do it each day around the same time in your evening routine (e.g., after brushing your teeth).</div>
+        <div class="tutorial-icon">⚠️</div>
+        <div class="tutorial-text">Careful! When you are sent a notification to fill out a questionnaire, you will have 30 minutes to complete it before it closes.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="7" data-target="#cardEvening">
       <div class="tutorial-tooltip">
-        <div class="tutorial-icon">📊🎉</div>
-        <div class="tutorial-text">At the end of the day, you'll see fun stats about your day!</div>
+        <div class="tutorial-icon">🌙</div>
+        <div class="tutorial-text">Finally, during the evening, you will have one final questionnaire to fill. Please complete it each day around the same time (for example, after brushing your teeth, or before closing the light).</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="8" data-target=".arc-card">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">👆</div>
-        <div class="tutorial-text">At the top, you can see your progression throughout the day.</div>
+        <div class="tutorial-text">At the top of the home screen, you will always be able to see your progression.</div>
       </div>
     </div>
 
     <div class="onboard-page tutorial-page" data-page="9" data-target=".note-card">
       <div class="tutorial-tooltip">
         <div class="tutorial-icon">💬</div>
-        <div class="tutorial-text">If there is anything else you'd like to tell us about your day, or are experiencing any difficulty, just indicate it anytime in the note box.</div>
+        <div class="tutorial-text">If there is anything else you would like to tell us about your day, or are experiencing any difficulty with the app, just indicate it anytime in the note box.</div>
       </div>
     </div>
 
@@ -531,21 +534,32 @@
     <div class="settings-field">
       <label>How to use the app</label>
       <div class="settings-hint" style="font-size:14px; line-height:1.55;">
-        Each day has 8 check-ins: a morning questionnaire, 6 short "beeps" spread through the day, and an evening questionnaire. The row of circles at the top of the home screen shows all 8 — filled green with a check once done, an orange outline when open right now, grey with a dash if missed, and blank if still to come.<br><br>
-        Each check-in only opens during its own time window (shown under its name on the home screen). Tap "Start" during that window to answer it. If a window closes before you complete it, it's marked missed and can't be reopened.<br><br>
-        Use "Note for the research team" any time to tell us about a difficulty, a question, or anything else — no need to wait for a check-in.
+        Each day has 8 check-ins: a morning questionnaire, 6 short questionnaires spread through the day, and an evening questionnaire. The row of circles at the top of the home screen shows all 8 and their completion status.<br><br>
+        Each check-in can only be filled out during its time window (shown next to its name on the home screen). Tap "start" during the window to answer it. If a window closes before you can answer it, it's marked as missed and cannot be re-opened.<br><br>
+        Use the "note for the research team" anytime to tell us about a difficulty you are having with the app, a question, or anything else about your day.
       </div>
     </div>
     <div class="settings-field">
       <label>Notifications</label>
       <div class="settings-hint" style="font-size:14px; line-height:1.55;">
-        For reliable reminders, install the free <b>ntfy</b> app from the Play Store, open it, tap "+", and paste in the topic code shown in Settings (a short code like <i>dailyrhythm-ab12cd</i> — tap Copy next to it, don't type the words "Reliable notifications"). That's the whole setup — after that, ntfy delivers each reminder on its own, even if this app or Chrome is fully closed.<br><br>
-        Tapping a notification opens this app directly into the right questionnaire.
+        For reliable reminders each time a check-in window opens, we provide phone notifications. Here are the steps to take to install them:
+      </div>
+      <div class="settings-hint" style="font-size:14px; line-height:1.9; margin-top:6px;">
+        1. Install the free <b>ntfy</b> app on your phone.<br>
+        2. Open the ntfy app, and click the <b>+</b> button.<br>
+        3. Paste this code in the topic box:
+      </div>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <input type="text" id="instrNtfyTopic" readonly style="flex:1; font-family:'SFMono-Regular',Consolas,monospace; background:var(--paper-2); font-size:15px;" />
+        <button class="btn ghost small" id="btnCopyTopicInstr" type="button">Copy</button>
+      </div>
+      <div class="settings-hint" style="font-size:14px; line-height:1.55; margin-top:10px;">
+        And that's it! Now, the app will send you notifications to remind you to complete your check-ins.
       </div>
     </div>
     <div class="settings-field">
       <label>Having trouble?</label>
-      <div class="settings-hint" style="font-size:14px;">Contact <a href="mailto:dorothee.morand-grondin@mail.mcgill.ca">dorothee.morand-grondin@mail.mcgill.ca</a></div>
+      <div class="settings-hint" style="font-size:14px;">You can contact us anytime: <a href="mailto:dorothee.morand-grondin@mail.mcgill.ca">dorothee.morand-grondin@mail.mcgill.ca</a></div>
     </div>
   </div>
 </div>
@@ -1373,7 +1387,7 @@ function renderInput(question, holder){
         <div class="stepper-val" id="stepVal">${val}</div>
         <button type="button" class="stepper-btn" id="stepPlus">+</button>
       </div>
-      <div class="q-eyebrow" style="text-align:center;margin-top:10px;">people</div>
+      <div class="q-eyebrow" style="text-align:center;margin-top:10px;">${val === 1 ? 'person' : 'people'}</div>
     `;
     document.getElementById('stepMinus').onclick = ()=>{
       survey.answers[question.id] = Math.max(min, survey.answers[question.id] - 1);
@@ -1516,7 +1530,7 @@ function prospectiveActivityBlock(label, iid){
     }),
     q('act_likely_'+iid, 'slider', 'How likely are you to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_toldBy_'+iid, 'slider', 'Did you decide to do this by yourself, or did someone else tell you to do this?', {
-      activityBanner:label, min:'Someone else pushed me', max:'I decided by myself',
+      activityBanner:label, min:'Someone else pushed me', max:'I decided all by myself',
       followupIfLTE: 50,
       followup: [ q('act_toldByWho_'+iid, 'single', 'Who pushed you to do this?', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
     }),
@@ -1533,7 +1547,7 @@ function retroExtraActivityBlock(label, iid){
     }),
     q('else_likely_'+iid, 'slider', 'How likely are you to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('else_toldBy_'+iid, 'slider', 'Did you decide to do this by yourself, or did someone else tell you to do this?', {
-      activityBanner:label, min:'Someone else pushed me', max:'I decided by myself',
+      activityBanner:label, min:'Someone else pushed me', max:'I decided all by myself',
       followupIfLTE: 50,
       followup: [ q('else_toldByWho_'+iid, 'single', 'Who pushed you to do this?', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
     }),
@@ -2054,10 +2068,16 @@ document.getElementById('settingsClose').onclick = ()=>{
 
 /* ---------------- Instructions ---------------- */
 document.getElementById('btnInstructions').onclick = ()=>{
+  document.getElementById('instrNtfyTopic').value = STATE.settings.ntfyTopic || '';
   document.getElementById('instructionsLayer').classList.add('open');
 };
 document.getElementById('instructionsClose').onclick = ()=>{
   document.getElementById('instructionsLayer').classList.remove('open');
+};
+document.getElementById('btnCopyTopicInstr').onclick = async ()=>{
+  const val = document.getElementById('instrNtfyTopic').value;
+  try{ await navigator.clipboard.writeText(val); toast('Copied'); }
+  catch(e){ toast('Copy failed — select and copy manually'); }
 };
 
 /* ---------------- First-time onboarding wizard ---------------- */
@@ -2119,18 +2139,27 @@ function updateTutorialSpotlight(){
   const HEADER_SPACE = 64;  // clears the progress bar / skip button
   const FOOTER_SPACE = 110; // clears the Back/Next buttons
   const inTutorial = onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE;
-  document.getElementById('onboardLayer').classList.toggle('spotlight-mode', inTutorial);
-  const dim = document.getElementById('tutorialDim');
-  const hole = document.getElementById('tutorialSpotlightHole');
-  if(!inTutorial){
-    dim.style.display = 'none';
-    hole.style.display = 'none';
-    return;
-  }
   const pageEl = document.querySelector('.onboard-page[data-page="'+onboardPos+'"]');
   const targetSel = pageEl ? pageEl.dataset.target : null;
   const targetAllSel = pageEl ? pageEl.dataset.targetAll : null;
+  const hasTarget = !!(targetSel || targetAllSel);
   const tooltip = pageEl ? pageEl.querySelector('.tutorial-tooltip') : null;
+  document.getElementById('onboardLayer').classList.toggle('spotlight-mode', inTutorial);
+  document.getElementById('onboardLayer').classList.toggle('no-target', inTutorial && !hasTarget);
+  const dim = document.getElementById('tutorialDim');
+  const hole = document.getElementById('tutorialSpotlightHole');
+  // General framing screens with nothing specific to point at (no data-target)
+  // stay a clean, plain page — no dimmed home screen behind them.
+  if(!inTutorial || !hasTarget){
+    dim.style.display = 'none';
+    hole.style.display = 'none';
+    if(tooltip){
+      tooltip.classList.add('tutorial-tooltip-centered');
+      tooltip.classList.remove('arrow-up','arrow-down');
+      tooltip.style.top = ''; tooltip.style.left = ''; tooltip.style.right = ''; tooltip.style.bottom = '';
+    }
+    return;
+  }
 
   // Pan the frozen preview to bring the relevant section into view first —
   // the person can't scroll it themselves, but the tutorial can, since
