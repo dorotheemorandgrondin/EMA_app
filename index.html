@@ -131,6 +131,12 @@
   input[type=range]{ flex:1; accent-color: var(--teal); height:6px; }
   .slider-ends{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-top:6px; }
 
+  /* stepper */
+  .stepper-row{ display:flex; align-items:center; justify-content:center; gap:22px; margin-top:14px; }
+  .stepper-btn{ width:52px; height:52px; border-radius:50%; border:1px solid var(--line); background:#fff; font-size:26px; font-weight:700; color:var(--teal); cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+  .stepper-btn:active{ background: rgba(47,111,109,0.1); }
+  .stepper-val{ font-size:32px; font-weight:700; min-width:48px; text-align:center; }
+
   /* choice list */
   .choice{ display:flex; align-items:center; gap:10px; padding:13px 14px; border:1px solid var(--line); border-radius:12px; margin-bottom:8px; cursor:pointer; background:#fff; font-size:15px;}
   .choice.selected{ border-color:var(--teal); background: rgba(47,111,109,0.07); font-weight:600;}
@@ -264,23 +270,8 @@
   <div class="survey-body" id="settingsBody" style="padding-top:22px;">
     <div class="settings-field">
       <label>Participant ID</label>
-      <input type="text" id="setParticipantId" placeholder="As given by your researcher" />
-    </div>
-    <div class="settings-field">
-      <label>Do you have Parkinson's disease?</label>
-      <div class="toggle-row">
-        <button class="btn ghost toggle-btn" id="setPdYes" data-val="yes">Yes</button>
-        <button class="btn ghost toggle-btn" id="setPdNo" data-val="no">No</button>
-      </div>
-      <div class="settings-hint">If no, motor-symptom questions will be skipped.</div>
-    </div>
-    <div class="settings-field">
-      <label>Do you take dopaminergic medication?</label>
-      <div class="toggle-row">
-        <button class="btn ghost toggle-btn" id="setMedYes" data-val="yes">Yes</button>
-        <button class="btn ghost toggle-btn" id="setMedNo" data-val="no">No</button>
-      </div>
-      <div class="settings-hint">If no, medication-timing questions will be skipped.</div>
+      <div id="setParticipantIdDisplay" style="font-size:16px; font-weight:600;">—</div>
+      <div class="settings-hint">Set once by your researcher — contact them if this needs to change.</div>
     </div>
     <div class="settings-field">
       <label>What time do you usually wake up? (earliest — latest)</label>
@@ -289,7 +280,7 @@
         <span>—</span>
         <input type="time" id="setWakeLatest" style="flex:1;" />
       </div>
-      <div class="settings-hint">Your morning check-in window runs from the earliest time up to 2 hours after the latest time.</div>
+      <div class="settings-hint">Your morning check-in window runs from the earliest time up to 1 hour after the latest time.</div>
     </div>
     <div class="settings-field">
       <label>What time do you usually go to sleep? (earliest — latest)</label>
@@ -298,7 +289,15 @@
         <span>—</span>
         <input type="time" id="setBedLatest" style="flex:1;" />
       </div>
-      <div class="settings-hint">Your evening check-in window runs from 2 hours before the earliest time up to the latest time. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
+      <div class="settings-hint">Your evening check-in window runs from 1 hour before the earliest time up to the latest time. The 6 daily check-ins in between are spread roughly 2 hours apart, each with a fixed 30-minute window.</div>
+    </div>
+    <div id="settingsConfirmRow" class="settings-field" style="display:none; border:1px solid var(--amber); border-radius:12px; padding:14px; background:rgba(197,142,58,0.08);">
+      <div style="font-weight:600; margin-bottom:6px;">Are you sure you want to change this information?</div>
+      <div class="settings-hint" style="margin-bottom:12px;">This will affect the check-in window time starting tomorrow. Today's check-ins are not affected.</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn ghost small" id="settingsConfirmCancel" type="button" style="flex:1;">Cancel</button>
+        <button class="btn small" id="settingsConfirmOk" type="button" style="flex:1;">Yes, change it</button>
+      </div>
     </div>
     <div class="settings-field">
       <label>Reliable notifications</label>
@@ -332,7 +331,77 @@
   </div>
   <div class="survey-body" id="onboardBody" style="padding-top:22px;">
 
-    <div class="onboard-page active" data-page="0">
+
+    <div class="onboard-page tutorial-page active" data-page="0">
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-teal">
+        <div class="tutorial-icon">🕰️</div>
+        <div class="tutorial-text">For this project, we are interested in learning more about how you spend your time during the day.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="1">
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dawn">
+        <div class="tutorial-icon">📝</div>
+        <div class="tutorial-text">We will ask you to complete short questionnaires throughout the day, asking you about what you are doing and how you are feeling.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="2">
+      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dusk">
+        <div class="tutorial-text">Just answer truthfully and to the best of your knowledge.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="3" data-target="#cardMorning">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">☀️</div>
+        <div class="tutorial-text">You'll have a morning questionnaire — please answer it every day around the same time during your morning routine (e.g., during your first coffee, or after brushing your teeth).</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="4" data-target-all=".card-beep">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">🔔</div>
+        <div class="tutorial-text">Then, you'll have 6 questionnaires to fill out at random times during the day. We will send you a notification when it's time to fill it.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="5" data-target-all=".card-beep">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">⚠️</div>
+        <div class="tutorial-text">Careful! When you're sent a notification, you'll have 30 min to complete the questionnaire before it closes.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="6" data-target="#cardEvening">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">🌙</div>
+        <div class="tutorial-text">Finally, during the evening, you'll have one final form to fill. Do it each day around the same time in your evening routine (e.g., after brushing your teeth).</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="7" data-target="#cardEvening">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">📊🎉</div>
+        <div class="tutorial-text">At the end of the day, you'll see fun stats about your day!</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="8" data-target=".arc-card">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">👆</div>
+        <div class="tutorial-text">At the top, you can see your progression throughout the day.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page tutorial-page" data-page="9" data-target=".note-card">
+      <div class="tutorial-tooltip">
+        <div class="tutorial-icon">💬</div>
+        <div class="tutorial-text">If there is anything else you'd like to tell us about your day, or are experiencing any difficulty, just indicate it anytime in the note box.</div>
+      </div>
+    </div>
+
+    <div class="onboard-page" data-page="10">
       <div class="settings-field">
         <label>Participant ID</label>
         <input type="text" id="obParticipantId" placeholder="As given by your researcher" />
@@ -378,75 +447,6 @@
       </div>
     </div>
 
-    <div class="onboard-page tutorial-page" data-page="1">
-      <div class="tutorial-tooltip tutorial-tooltip-centered accent-teal">
-        <div class="tutorial-icon">🕰️</div>
-        <div class="tutorial-text">For this project, we are interested in learning more about how you spend your time during the day.</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="2">
-      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dawn">
-        <div class="tutorial-icon">📝</div>
-        <div class="tutorial-text">We will ask you to complete short questionnaires throughout the day, asking you about what you are doing and how you are feeling.</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="3">
-      <div class="tutorial-tooltip tutorial-tooltip-centered accent-dusk">
-        <div class="tutorial-text">Just answer truthfully and to the best of your knowledge.</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="4" data-target="#cardMorning">
-      <div class="tutorial-tooltip">
-        <div class="tutorial-icon">☀️</div>
-        <div class="tutorial-text">You'll have a morning questionnaire — please answer it every day around the same time during your morning routine (e.g., during your first coffee, or after brushing your teeth).</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="5" data-target-all=".card-beep">
-      <div class="tutorial-tooltip">
-        <div class="tutorial-icon">🔔</div>
-        <div class="tutorial-text">Then, you'll have 6 questionnaires to fill out at random times during the day. We will send you a notification when it's time to fill it.</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="6" data-target-all=".card-beep">
-      <div class="tutorial-tooltip">
-        <div class="tutorial-icon">⚠️</div>
-        <div class="tutorial-text">Careful! When you're sent a notification, you'll have 30 min to complete the questionnaire before it closes.</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="7" data-target="#cardEvening">
-      <div class="tutorial-tooltip">
-        <div class="tutorial-icon">🌙</div>
-        <div class="tutorial-text">Finally, during the evening, you'll have one final form to fill. Do it each day around the same time in your evening routine (e.g., after brushing your teeth).</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="8" data-target="#cardEvening">
-      <div class="tutorial-tooltip">
-        <div class="tutorial-icon">📊🎉</div>
-        <div class="tutorial-text">At the end of the day, you'll see fun stats about your day!</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="9" data-target=".arc-card">
-      <div class="tutorial-tooltip">
-        <div class="tutorial-icon">👆</div>
-        <div class="tutorial-text">At the top, you can see your progression throughout the day.</div>
-      </div>
-    </div>
-
-    <div class="onboard-page tutorial-page" data-page="10" data-target=".note-card">
-      <div class="tutorial-tooltip">
-        <div class="tutorial-icon">💬</div>
-        <div class="tutorial-text">If there is anything else you'd like to tell us about your day, or are experiencing any difficulty, just indicate it anytime in the note box.</div>
-      </div>
-    </div>
-
     <div class="onboard-page" data-page="11" style="text-align:center; padding-top:30px;">
       <div class="summary-headline" style="font-size:22px;">One more step</div>
       <div class="settings-hint" style="font-size:15.5px; line-height:1.7; max-width:320px; margin:0 auto;">
@@ -459,15 +459,11 @@
       <div class="settings-field">
         <label>Step 1 of 4 — Install the ntfy app</label>
         <div class="settings-hint" style="font-size:15px; line-height:1.7;">
-          This is a free, separate app whose only job is delivering your reminders — it keeps working even when Daily Rhythm is fully closed. It's available for both iPhone and Android.
+          This is a free, separate app whose only job is delivering your reminders — it keeps working even when Daily Rhythm is fully closed.
         </div>
-        <div class="toggle-row" style="margin-top:10px;">
-          <button class="btn ghost toggle-btn" id="obPlatformAndroid" data-val="android">🤖 Android</button>
-          <button class="btn ghost toggle-btn" id="obPlatformIos" data-val="ios">📱 iPhone</button>
-        </div>
-        <a class="btn ghost" id="obPlatformAndroidLink" style="display:none; text-align:center; margin-top:12px; text-decoration:none;" href="https://play.google.com/store/search?q=ntfy&c=apps" target="_blank" rel="noopener">Open Play Store</a>
-        <a class="btn ghost" id="obPlatformIosLink" style="display:none; text-align:center; margin-top:12px; text-decoration:none;" href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener">Open App Store</a>
-        <div class="settings-hint" id="obPlatformIosNote" style="display:none; margin-top:10px; font-size:13px;">One honest note: on iPhone, notifications occasionally arrive a little less instantly than on Android — that's an Apple/iOS thing, not specific to this app. It's still worth testing on the next screen either way.</div>
+        <a class="btn ghost" id="obPlatformIosLink" style="display:block; text-align:center; margin-top:12px; text-decoration:none;" href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener">📱 Install on iPhone</a>
+        <a class="btn ghost" id="obPlatformAndroidLink" style="display:block; text-align:center; margin-top:10px; text-decoration:none;" href="https://play.google.com/store/search?q=ntfy&c=apps" target="_blank" rel="noopener">🤖 Install on Android</a>
+        <div class="settings-hint" style="margin-top:10px; font-size:13px;">One honest note: on iPhone, notifications occasionally arrive a little less instantly than on Android — that's an Apple/iOS thing, not specific to this app. It's still worth testing on the next screen either way.</div>
       </div>
     </div>
 
@@ -577,7 +573,6 @@ const BED_EARLIEST_DEFAULT = '21:00';
 const BED_LATEST_DEFAULT = '23:00';
 const RESEARCHER_EMAIL_DEFAULT = 'dorotheemgrondin1@gmail.com';
 const BEEPS_PER_DAY = 6;
-const MIN_GAP_MIN = 100; // minimum minutes between beeps (targets ~2h apart)
 const BEEP_WINDOW_MIN = 30; // how long each beep stays open before it's missed
 
 function todayStr(d = new Date()){
@@ -638,22 +633,19 @@ function loadState(){
 let STATE = loadState();
 function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
 
-/* Window boundaries, in minutes-since-midnight. */
-function morningWindow(){
-  return { start: toMin(STATE.settings.wakeEarliest), end: toMin(STATE.settings.wakeLatest) + 120 };
+/* Window boundaries, in minutes-since-midnight. A settings change made mid-day
+   (via Settings) must not shift today's already-promised windows — so these
+   all read from STATE.daySettings, a snapshot taken once per day at rollover,
+   rather than the live (possibly just-edited) STATE.settings. An explicit `s`
+   override is used when computing a *future* day ahead of time. */
+function daySettingsOrLive(s){ return s || STATE.daySettings || STATE.settings; }
+function morningWindow(s){
+  s = daySettingsOrLive(s);
+  return { start: toMin(s.wakeEarliest), end: toMin(s.wakeLatest) + 60 };
 }
-function eveningWindow(){
-  return { start: toMin(STATE.settings.bedEarliest) - 120, end: toMin(STATE.settings.bedLatest) };
-}
-/* Beeps still use a tighter 30-min buffer around the wake/bed range, kept
-   separate from the (now more generous) questionnaire availability windows
-   above — so extending the morning/evening windows doesn't compress the
-   time available for the 6 daily beeps. */
-function beepSpanBoundaries(){
-  return {
-    start: toMin(STATE.settings.wakeLatest) + 30,
-    end: toMin(STATE.settings.bedEarliest) - 30,
-  };
+function eveningWindow(s){
+  s = daySettingsOrLive(s);
+  return { start: toMin(s.bedEarliest) - 60, end: toMin(s.bedLatest) };
 }
 function checkpointStatus(win, done){
   if(done) return 'done';
@@ -668,12 +660,22 @@ function ensureToday(){
   const t = todayStr();
   if(STATE.day.date !== t){
     STATE.day = { date: t, morningDone:false, eveningDone:false, beepsDone: [], pendingActivities: [] };
+    // Freeze today's wake/bed settings — any change made in Settings from
+    // here on is "pending" and only takes effect at the next day's rollover.
+    STATE.daySettings = {
+      wakeEarliest: STATE.settings.wakeEarliest, wakeLatest: STATE.settings.wakeLatest,
+      bedEarliest: STATE.settings.bedEarliest, bedLatest: STATE.settings.bedLatest,
+    };
   }
+  if(!STATE.daySettings) STATE.daySettings = {
+    wakeEarliest: STATE.settings.wakeEarliest, wakeLatest: STATE.settings.wakeLatest,
+    bedEarliest: STATE.settings.bedEarliest, bedLatest: STATE.settings.bedLatest,
+  };
   if(STATE.schedule.date !== t){
     // Use a schedule pre-generated in advance if one exists (so it matches
     // what was already promised via notification); otherwise generate fresh
     // now (e.g. the very first day, before any advance scheduling has run).
-    const times = STATE.futureSchedules[t] || generateBeepTimes();
+    const times = STATE.futureSchedules[t] || generateBeepTimes(STATE.daySettings);
     STATE.schedule = { date: t, times };
     delete STATE.futureSchedules[t];
   }
@@ -681,26 +683,24 @@ function ensureToday(){
   scheduleNtfyUpcoming();
 }
 
-function generateBeepTimes(){
-  const b = beepSpanBoundaries();
-  const startMin = b.start;
-  const endMin = b.end;
-  const span = Math.max(endMin - startMin, MIN_GAP_MIN*BEEPS_PER_DAY);
-  const slot = span / BEEPS_PER_DAY;
-  const times = [];
-  for(let i=0;i<BEEPS_PER_DAY;i++){
-    const slotStart = startMin + i*slot;
-    const slotEnd = slotStart + slot;
-    const usableStart = slotStart + Math.min(15, slot*0.15);
-    const usableEnd = slotEnd - Math.min(15, slot*0.15);
-    const t = Math.round(usableStart + Math.random()*(usableEnd-usableStart));
-    times.push(t);
-  }
+/* The fixed daily anchor the 6 beep checkpoints are spaced symmetrically
+   around: the midpoint between the latest wake time and earliest bed time,
+   plus 1h (to account for the last checkpoint otherwise under-covering the
+   late part of the day). */
+function beepCenterMinutes(s){
+  s = daySettingsOrLive(s);
+  return Math.round((toMin(s.wakeLatest) + toMin(s.bedEarliest)) / 2) + 60;
+}
+function jitterMinutes(span){ return Math.round((Math.random()*2 - 1) * span); }
+
+function generateBeepTimes(s){
+  // A random daily anchor (+/-20min around the fixed center), then 6
+  // checkpoints exactly 2h apart (3 before, 3 after that anchor), each
+  // independently jittered +/-20min for its actual window start.
+  const dailyCenter = beepCenterMinutes(s) + jitterMinutes(20);
+  const offsets = [-360, -240, -120, 0, 120, 240];
+  const times = offsets.map(off => dailyCenter + off + jitterMinutes(20));
   times.sort((a,b)=>a-b);
-  // enforce min gap best-effort
-  for(let i=1;i<times.length;i++){
-    if(times[i]-times[i-1] < MIN_GAP_MIN) times[i] = times[i-1] + MIN_GAP_MIN;
-  }
   return times.map(m => pad(Math.floor(m/60)) + ':' + pad(m%60));
 }
 
@@ -769,19 +769,27 @@ function checkDueBeeps(){
   if(!STATE.settings.ntfyTopic){
     const nowMin = nowMinutes();
     const mw = morningWindow();
-    if(!STATE.day.morningDone && nowMin >= mw.start && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
-      fireNotification('Good morning ☀️', 'Your morning check-in is ready.', 'morning');
+    const morningNotifAt = mw.end - 30;
+    if(!STATE.day.morningDone && nowMin >= morningNotifAt && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
+      fireNotification('Good morning ☀️', 'Your morning check-in closes in 30 minutes.', 'morning');
       markNotified('morning-'+STATE.day.date);
     }
     STATE.schedule.times.forEach((t, idx)=>{
       const tag = 'beep-'+idx+'-'+STATE.day.date;
+      const reminderTag = 'beep-'+idx+'-reminder-'+STATE.day.date;
+      const w = beepWindowMinutes(idx);
       if(beepStatus(idx) === 'available' && !notifiedTags.has(tag)){
         fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
         markNotified(tag);
       }
+      if(!STATE.day.beepsDone.includes(idx) && nowMin >= w.start+15 && nowMin <= w.end && !notifiedTags.has(reminderTag)){
+        fireNotification('Just a reminder', 'Your check-in is still open — a few minutes left.', 'beep-'+idx);
+        markNotified(reminderTag);
+      }
     });
     const ew = eveningWindow();
-    if(!STATE.day.eveningDone && nowMin >= ew.start && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
+    const eveningNotifAt = ew.start + 30;
+    if(!STATE.day.eveningDone && nowMin >= eveningNotifAt && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
       fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
       markNotified('evening-'+STATE.day.date);
     }
@@ -800,15 +808,19 @@ const NTFY_ROLL_AHEAD_DAYS = 2; // keep today + this many days ahead scheduled w
    push several days ahead every time it *is* opened, keeping a rolling buffer.
    That way a day the app never gets opened still has its notifications queued,
    as long as the app was opened at some point in the preceding couple of days. */
-function checkpointsForDay(beepTimes){
+function checkpointsForDay(beepTimes, s){
+  const mw = morningWindow(s);
   const points = [
-    { mins: morningWindow().start, title:'Good morning ☀️', body:'Your morning check-in is ready.', tag:'morning' },
+    { mins: mw.end - 30, title:'Good morning ☀️', body:'Your morning check-in closes in 30 minutes.', tag:'morning' },
   ];
   beepTimes.forEach((t, idx)=>{
     const [th,tm] = t.split(':').map(Number);
-    points.push({ mins: th*60+tm, title:'It\u2019s time for some questions', body:'You have 30 minutes to answer.', tag:'beep-'+idx });
+    const start = th*60+tm;
+    points.push({ mins: start, title:'It\u2019s time for some questions', body:'You have 30 minutes to answer.', tag:'beep-'+idx });
+    points.push({ mins: start + 15, title:'Just a reminder', body:'Your check-in is still open — a few minutes left.', tag:'beep-'+idx });
   });
-  points.push({ mins: eveningWindow().start, title:'Evening check-in 🌙', body:'A few questions to round off the day.', tag:'evening' });
+  const ew = eveningWindow(s);
+  points.push({ mins: ew.start + 30, title:'Evening check-in 🌙', body:'A few questions to round off the day.', tag:'evening' });
   return points;
 }
 
@@ -844,14 +856,18 @@ async function scheduleNtfyUpcoming(){
   while(cursor <= endDate){
     const dayKey = todayStr(cursor);
     let beepTimes;
+    // Today uses the frozen daySettings snapshot; a future day (not yet
+    // rolled over) uses the current/pending settings — the best guess for
+    // what will be in effect once it arrives (updated again if changed later).
+    const dayS = (dayKey === todayKey) ? (STATE.daySettings || STATE.settings) : STATE.settings;
     if(dayKey === STATE.schedule.date){
       beepTimes = STATE.schedule.times; // today's already-committed schedule
     } else {
-      beepTimes = STATE.futureSchedules[dayKey] || generateBeepTimes();
+      beepTimes = STATE.futureSchedules[dayKey] || generateBeepTimes(dayS);
       STATE.futureSchedules[dayKey] = beepTimes; // cache so that day uses these same times when it arrives
     }
     const dayMidnight = new Date(cursor); dayMidnight.setHours(0,0,0,0);
-    const points = checkpointsForDay(beepTimes);
+    const points = checkpointsForDay(beepTimes, dayS);
     let dayOk = true;
     for(const p of points){
       const deliverAt = dayMidnight.getTime() + p.mins*60000;
@@ -1078,7 +1094,7 @@ function hi(label){ return '<span class="act-hl">' + escHtml(lowerFirst(label)) 
 function q(id, type, text, opts={}){ return Object.assign({ id, type, text }, opts); }
 
 function isPD(){ return STATE.settings.hasParkinsons !== false; }
-function takesMedication(){ return STATE.settings.takesMedication !== false; }
+function takesMedication(){ return isPD() && STATE.settings.takesMedication !== false; }
 
 function buildMorningSurvey(){
   const fixed = [
@@ -1104,7 +1120,7 @@ function buildBeepSurvey(beepIndex){
 
   const stateQs = [
     isPD() && q('motorProblems','slider','To what extent do you experience motor problems right now?', {min:'No problems', max:'Big problems'}),
-    isPD() && q('onOff','single','Are you feeling ON or OFF dopamine?', { choices:['On','On → Off','Off','Off → On','Overactive',"I'm not sure"] }),
+    isPD() && takesMedication() && q('onOff','single','Are you feeling ON or OFF dopamine?', { choices:['On','On → Off','Off','Off → On','Overactive',"I'm not sure"] }),
     takesMedication() && q('lastMedTime','time','At what time did you take dopaminergic medication for the last time?'),
     q('energy','slider','How energetic are you right now?', {min:'Very tired', max:'Very energetic'}),
     q('concentration','slider','How is your concentration at the moment?', {min:'Very poor', max:'Very good'}),
@@ -1115,8 +1131,7 @@ function buildBeepSurvey(beepIndex){
     q('location','single','Where are you right now?', { choices:['Home','Work',"Someone else's house",'Outside','Somewhere else'], otherOnLast:true }),
     q('withSomeone','yesno','Were you with someone during the last 2 hours?', {
       followupYes: [
-        q('withWho','multi','Who were you with?', { choices: RELATIONS, otherLabel:'Someone else' }),
-        q('interactionQuality','slider','How would you rate the quality of the interaction?', {min:'Very bad', max:'Very good'}),
+        q('withWho','multi','Who were you with?', { choices: RELATIONS, otherLabel:'Someone else', relExpand:'retro' }),
       ]
     }),
   ];
@@ -1292,6 +1307,7 @@ function validateStep(question){
   if(!question) return false;
   const ans = survey.answers[question.id];
   if(question.type === 'slider') return survey.touched.has(question.id);
+  if(question.type === 'stepper') return true;
   if(question.type === 'yesno') return ans === 'Yes' || ans === 'No';
   if(question.type === 'time' || question.type === 'text') return !!(ans && String(ans).trim());
   if(question.type === 'single'){
@@ -1346,6 +1362,27 @@ function renderInput(question, holder){
       document.getElementById('rangeInput').style.opacity = '1';
       refreshNextButton();
     });
+  }
+  else if(question.type === 'stepper'){
+    if(survey.answers[question.id] === undefined) survey.answers[question.id] = question.min ?? 1;
+    const val = survey.answers[question.id];
+    const min = question.min ?? 1;
+    holder.innerHTML = `
+      <div class="stepper-row">
+        <button type="button" class="stepper-btn" id="stepMinus">−</button>
+        <div class="stepper-val" id="stepVal">${val}</div>
+        <button type="button" class="stepper-btn" id="stepPlus">+</button>
+      </div>
+      <div class="q-eyebrow" style="text-align:center;margin-top:10px;">people</div>
+    `;
+    document.getElementById('stepMinus').onclick = ()=>{
+      survey.answers[question.id] = Math.max(min, survey.answers[question.id] - 1);
+      renderStep();
+    };
+    document.getElementById('stepPlus').onclick = ()=>{
+      survey.answers[question.id] = survey.answers[question.id] + 1;
+      renderStep();
+    };
   }
   else if(question.type === 'yesno'){
     ['Yes','No'].forEach(opt=>{
@@ -1475,12 +1512,13 @@ function prospectiveActivityBlock(label, iid){
     q('act_should_'+iid, 'slider', 'How much do you think you should do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_othersPresent_'+iid, 'yesno', 'Will other people be with you during this activity?', {
       activityBanner:label,
-      followupYes: [ q('act_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
+      followupYes: [ q('act_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label, relExpand:'prospective' }) ]
     }),
     q('act_likely_'+iid, 'slider', 'How likely are you to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('act_toldBy_'+iid, 'yesno', 'Did someone else tell you to do this?', {
-      activityBanner:label,
-      followupYes: [ q('act_toldByWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
+    q('act_toldBy_'+iid, 'slider', 'Did you decide to do this by yourself, or did someone else tell you to do this?', {
+      activityBanner:label, min:'Someone else pushed me', max:'I decided by myself',
+      followupIfLTE: 50,
+      followup: [ q('act_toldByWho_'+iid, 'single', 'Who pushed you to do this?', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
     }),
   ];
 }
@@ -1489,16 +1527,35 @@ function retroExtraActivityBlock(label, iid){
     q('else_effort_'+iid, 'slider', 'How effortful was this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('else_enjoy_'+iid, 'slider', 'How enjoyable was this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('else_should_'+iid, 'slider', 'How much do you feel you had to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('else_othersPresent_'+iid, 'yesno', 'Will other people be with you during this activity?', {
+    q('else_othersPresent_'+iid, 'yesno', 'Were other people with you during this activity?', {
       activityBanner:label,
-      followupYes: [ q('else_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
+      followupYes: [ q('else_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label, relExpand:'retro' }) ]
     }),
     q('else_likely_'+iid, 'slider', 'How likely are you to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('else_toldBy_'+iid, 'yesno', 'Did someone else tell you to do this?', {
-      activityBanner:label,
-      followupYes: [ q('else_toldByWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
+    q('else_toldBy_'+iid, 'slider', 'Did you decide to do this by yourself, or did someone else tell you to do this?', {
+      activityBanner:label, min:'Someone else pushed me', max:'I decided by myself',
+      followupIfLTE: 50,
+      followup: [ q('else_toldByWho_'+iid, 'single', 'Who pushed you to do this?', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label }) ]
     }),
   ]);
+}
+
+/* Per-relationship detail: for each relationship the person picked on a
+   multi-select "who" question, ask how many people in that category, and
+   whether they were (or will be) actually interacted with vs. just present.
+   tense: 'retro' (past — "were with you") or 'prospective' (future — "will be with you"). */
+function relationshipDetailBlock(question, rel, tense){
+  const relLabel = isOtherLike(rel) ? (survey.answers[question.id+'_other'] || 'this person') : rel;
+  const relKey = question.id + '_' + slug(rel);
+  const future = tense === 'prospective';
+  const countText = future ? `How many ${relLabel} will be with you?` : `How many ${relLabel} were with you?`;
+  const interactChoices = future
+    ? ["They’ll be in the space", "They’ll be involved in the activity"]
+    : ["Present, but I didn’t interact with them", "I interacted with them"];
+  return [
+    q(relKey+'_count', 'stepper', countText, { activityBanner: question.activityBanner, min:1 }),
+    q(relKey+'_interact', 'single', `Regarding ${relLabel}:`, { activityBanner: question.activityBanner, choices: interactChoices }),
+  ];
 }
 
 function computeFollowups(question){
@@ -1507,7 +1564,14 @@ function computeFollowups(question){
   if(question.followupYes && ans==='Yes') list = question.followupYes;
   else if(question.followupNo && ans==='No') list = question.followupNo;
   else if(question.followupFor && ans===question.followupFor) list = question.followup;
+  else if(question.followupIfLTE !== undefined && typeof ans === 'number' && ans <= question.followupIfLTE) list = question.followup;
   else if(question.branches && question.branches[ans]) list = question.branches[ans];
+
+  if(question.relExpand){
+    const picks = ans || [];
+    const relBlocks = picks.map(rel => relationshipDetailBlock(question, rel, question.relExpand));
+    list = [...list, ...relBlocks.flat()];
+  }
 
   if(question.expandMode){
     const items = ans || [];
@@ -1851,19 +1915,15 @@ let pendingHasParkinsons = null;
 let pendingTakesMedication = null;
 
 function updatePdToggle(){
-  ['setPdYes','obPdYes'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingHasParkinsons === true));
-  ['setPdNo','obPdNo'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingHasParkinsons === false));
+  ['obPdYes'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingHasParkinsons === true));
+  ['obPdNo'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingHasParkinsons === false));
 }
 function updateMedToggle(){
-  ['setMedYes','obMedYes'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingTakesMedication === true));
-  ['setMedNo','obMedNo'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingTakesMedication === false));
+  ['obMedYes'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingTakesMedication === true));
+  ['obMedNo'].forEach(id=>document.getElementById(id).classList.toggle('active', pendingTakesMedication === false));
 }
-document.getElementById('setPdYes').onclick = ()=>{ pendingHasParkinsons = true; updatePdToggle(); };
-document.getElementById('setPdNo').onclick = ()=>{ pendingHasParkinsons = false; updatePdToggle(); };
 document.getElementById('obPdYes').onclick = ()=>{ pendingHasParkinsons = true; updatePdToggle(); };
 document.getElementById('obPdNo').onclick = ()=>{ pendingHasParkinsons = false; updatePdToggle(); };
-document.getElementById('setMedYes').onclick = ()=>{ pendingTakesMedication = true; updateMedToggle(); };
-document.getElementById('setMedNo').onclick = ()=>{ pendingTakesMedication = false; updateMedToggle(); };
 document.getElementById('obMedYes').onclick = ()=>{ pendingTakesMedication = true; updateMedToggle(); };
 document.getElementById('obMedNo').onclick = ()=>{ pendingTakesMedication = false; updateMedToggle(); };
 
@@ -1895,18 +1955,15 @@ wirePilotPassword('setPilotMode', 'pilotPasswordRow', 'pilotPasswordInput', 'pil
 wirePilotPassword('obPilotMode', 'obPilotPasswordRow', 'obPilotPasswordInput', 'obPilotPasswordConfirm');
 
 function openSettings(){
-  document.getElementById('setParticipantId').value = STATE.settings.participantId || '';
+  document.getElementById('setParticipantIdDisplay').textContent = STATE.settings.participantId || '—';
   document.getElementById('setWakeEarliest').value = STATE.settings.wakeEarliest || WAKE_EARLIEST_DEFAULT;
   document.getElementById('setWakeLatest').value = STATE.settings.wakeLatest || WAKE_LATEST_DEFAULT;
   document.getElementById('setBedEarliest').value = STATE.settings.bedEarliest || BED_EARLIEST_DEFAULT;
   document.getElementById('setBedLatest').value = STATE.settings.bedLatest || BED_LATEST_DEFAULT;
   document.getElementById('setPilotMode').checked = !!STATE.settings.pilotMode;
   document.getElementById('pilotPasswordRow').style.display = 'none';
+  document.getElementById('settingsConfirmRow').style.display = 'none';
   document.getElementById('setNtfyTopic').value = STATE.settings.ntfyTopic || '';
-  pendingHasParkinsons = STATE.settings.hasParkinsons;
-  pendingTakesMedication = STATE.settings.takesMedication;
-  updatePdToggle();
-  updateMedToggle();
   document.getElementById('settingsLayer').classList.add('open');
 }
 document.getElementById('btnSettings').onclick = openSettings;
@@ -1917,61 +1974,78 @@ document.getElementById('btnCopyTopic').onclick = async ()=>{
   catch(e){ toast('Copy failed — select and copy manually'); }
 };
 
+/* Inline "are you sure" confirmation for a wake/bed time change — a custom
+   row rather than window.confirm(), which has proven unreliable inside an
+   installed standalone PWA. */
+let _settingsConfirmCb = null;
+function showSettingsConfirm(onConfirm){
+  _settingsConfirmCb = onConfirm;
+  document.getElementById('settingsConfirmRow').style.display = 'block';
+  document.getElementById('settingsConfirmRow').scrollIntoView({behavior:'smooth', block:'center'});
+}
+document.getElementById('settingsConfirmCancel').onclick = ()=>{
+  _settingsConfirmCb = null;
+  document.getElementById('settingsConfirmRow').style.display = 'none';
+};
+document.getElementById('settingsConfirmOk').onclick = ()=>{
+  document.getElementById('settingsConfirmRow').style.display = 'none';
+  const cb = _settingsConfirmCb; _settingsConfirmCb = null;
+  if(cb) cb();
+};
+
 document.getElementById('settingsSave').onclick = ()=>{
-  const pid = document.getElementById('setParticipantId').value.trim();
   const wakeEarliest = document.getElementById('setWakeEarliest').value;
   const wakeLatest = document.getElementById('setWakeLatest').value;
   const bedEarliest = document.getElementById('setBedEarliest').value;
   const bedLatest = document.getElementById('setBedLatest').value;
   const pilotChecked = document.getElementById('setPilotMode').checked;
-  const ntfyTopic = document.getElementById('setNtfyTopic').value.trim();
 
-  if(!pid){ toast('Please enter your participant ID'); return; }
-  if(pendingHasParkinsons !== true && pendingHasParkinsons !== false){ toast("Please answer the Parkinson's question"); return; }
-  if(pendingTakesMedication !== true && pendingTakesMedication !== false){ toast('Please answer the medication question'); return; }
   if(!wakeEarliest || !wakeLatest || !bedEarliest || !bedLatest){ toast('Please set your wake and sleep time ranges'); return; }
   if(toMin(wakeLatest) < toMin(wakeEarliest)){ toast('Latest wake time must be after the earliest'); return; }
   if(toMin(bedLatest) < toMin(bedEarliest)){ toast('Latest bedtime must be after the earliest'); return; }
 
-  const changed = (
-    pid !== STATE.settings.participantId ||
-    pendingHasParkinsons !== STATE.settings.hasParkinsons ||
-    pendingTakesMedication !== STATE.settings.takesMedication ||
-    wakeEarliest !== STATE.settings.wakeEarliest || wakeLatest !== STATE.settings.wakeLatest ||
-    bedEarliest !== STATE.settings.bedEarliest || bedLatest !== STATE.settings.bedLatest
-    // pilotMode is intentionally excluded here — it already has its own
-    // dedicated password + confirmation flow at the moment it's toggled.
-  );
-  if(changed){
-    const ok = confirm('Are you sure you want to change this information?');
-    if(!ok) return;
-  }
-
-  const scheduleAffectingChange = (wakeEarliest !== STATE.settings.wakeEarliest) || (wakeLatest !== STATE.settings.wakeLatest) ||
+  const timeChanged = (wakeEarliest !== STATE.settings.wakeEarliest) || (wakeLatest !== STATE.settings.wakeLatest) ||
     (bedEarliest !== STATE.settings.bedEarliest) || (bedLatest !== STATE.settings.bedLatest);
 
-  STATE.settings.participantId = pid;
-  STATE.settings.hasParkinsons = pendingHasParkinsons;
-  STATE.settings.takesMedication = pendingTakesMedication;
-  STATE.settings.wakeEarliest = wakeEarliest;
-  STATE.settings.wakeLatest = wakeLatest;
-  STATE.settings.bedEarliest = bedEarliest;
-  STATE.settings.bedLatest = bedLatest;
-  STATE.settings.pilotMode = pilotChecked;
-  saveState();
-  ensureToday();
-  STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
-  if(scheduleAffectingChange){
-    // Old cached future days no longer match the new settings — clear them
-    // and re-push from today forward.
-    STATE.futureSchedules = {};
-    STATE.ntfyScheduledThrough = null;
+  function applyAndSave(){
+    if(timeChanged){
+      // Log the change itself (with a timestamp) so it's visible in the CSV export.
+      const nowIso = new Date().toISOString();
+      STATE.entries.push({
+        id: uid(), type: 'settingsChange', tag: 'wakeBedTimeChange',
+        participantId: STATE.settings.participantId || '', date: todayStr(),
+        startTime: nowIso, endTime: nowIso, durationSeconds: 0,
+        oldWakeEarliest: STATE.settings.wakeEarliest, oldWakeLatest: STATE.settings.wakeLatest,
+        oldBedEarliest: STATE.settings.bedEarliest, oldBedLatest: STATE.settings.bedLatest,
+        newWakeEarliest: wakeEarliest, newWakeLatest: wakeLatest,
+        newBedEarliest: bedEarliest, newBedLatest: bedLatest,
+      });
+    }
+    STATE.settings.wakeEarliest = wakeEarliest;
+    STATE.settings.wakeLatest = wakeLatest;
+    STATE.settings.bedEarliest = bedEarliest;
+    STATE.settings.bedLatest = bedLatest;
+    STATE.settings.pilotMode = pilotChecked;
+    if(timeChanged){
+      // Today's check-in windows were already fixed for the day in
+      // STATE.daySettings when it began — untouched here, so today is
+      // unaffected. Only cached *future* days (which haven't happened yet)
+      // need clearing so they pick up the new settings starting tomorrow.
+      STATE.futureSchedules = {};
+      STATE.ntfyScheduledThrough = null;
+    }
+    saveState();
+    scheduleNtfyUpcoming();
+    document.getElementById('settingsLayer').classList.remove('open');
+    renderHome();
+    toast('Settings saved');
   }
-  saveState();
-  scheduleNtfyUpcoming();
-  document.getElementById('settingsLayer').classList.remove('open');
-  renderHome();
-  toast('Settings saved');
+
+  if(timeChanged){
+    showSettingsConfirm(applyAndSave);
+  } else {
+    applyAndSave();
+  }
 };
 
 document.getElementById('settingsClose').onclick = ()=>{
@@ -1988,21 +2062,11 @@ document.getElementById('instructionsClose').onclick = ()=>{
 
 /* ---------------- First-time onboarding wizard ---------------- */
 const ONBOARD_PAGE_COUNT = 17;
-const TUTORIAL_FIRST_PAGE = 1;
-const TUTORIAL_LAST_PAGE = 10;
+const TUTORIAL_FIRST_PAGE = 0;
+const TUTORIAL_LAST_PAGE = 9;
+const INFO_PAGE = 10;
 const NOTIF_INTRO_PAGE = 11;
 let onboardPos = 0;
-
-function updatePlatformToggle(){
-  const p = STATE.settings.devicePlatform;
-  document.getElementById('obPlatformAndroid').classList.toggle('active', p === 'android');
-  document.getElementById('obPlatformIos').classList.toggle('active', p === 'ios');
-  document.getElementById('obPlatformAndroidLink').style.display = p === 'android' ? 'block' : 'none';
-  document.getElementById('obPlatformIosLink').style.display = p === 'ios' ? 'block' : 'none';
-  document.getElementById('obPlatformIosNote').style.display = p === 'ios' ? 'block' : 'none';
-}
-document.getElementById('obPlatformAndroid').onclick = ()=>{ STATE.settings.devicePlatform = 'android'; saveState(); updatePlatformToggle(); };
-document.getElementById('obPlatformIos').onclick = ()=>{ STATE.settings.devicePlatform = 'ios'; saveState(); updatePlatformToggle(); };
 
 function openOnboarding(){
   onboardPos = 0;
@@ -2018,7 +2082,6 @@ function openOnboarding(){
   document.getElementById('obTestStatus').textContent = '';
   updatePdToggle();
   updateMedToggle();
-  updatePlatformToggle();
   renderOnboardStep();
   document.getElementById('onboardLayer').classList.add('open');
   document.getElementById('app').classList.add('frozen-preview');
@@ -2035,9 +2098,6 @@ function renderOnboardStep(){
   document.getElementById('onboardNext').textContent = onboardPos === ONBOARD_PAGE_COUNT - 1 ? 'Finish' : 'Next';
   document.getElementById('onboardProgressBar').style.width = Math.round(((onboardPos+1)/ONBOARD_PAGE_COUNT)*100) + '%';
   document.getElementById('onboardSkip').style.display = (onboardPos >= TUTORIAL_FIRST_PAGE && onboardPos <= TUTORIAL_LAST_PAGE) ? 'block' : 'none';
-  if(onboardPos === 12){
-    updatePlatformToggle();
-  }
   if(onboardPos === 13){
     document.getElementById('obNtfyTopic').value = STATE.settings.ntfyTopic || '';
   }
@@ -2045,7 +2105,9 @@ function renderOnboardStep(){
   updateTutorialSpotlight();
 }
 document.getElementById('onboardSkip').onclick = ()=>{
-  onboardPos = NOTIF_INTRO_PAGE;
+  // Skips the rest of the general tutorial, but still lands on the required
+  // info form (participant ID, PD/meds, wake/bed times) rather than past it.
+  onboardPos = INFO_PAGE;
   renderOnboardStep();
 };
 
@@ -2201,7 +2263,7 @@ document.getElementById('obSendTest').onclick = async ()=>{
       body: JSON.stringify({
         topic: STATE.settings.ntfyTopic,
         title: 'Test notification 🎉',
-        message: 'If you see this, notifications are working!',
+        message: 'Bravo! The notifications are now working.',
       }),
     });
     if(!res.ok){
@@ -2220,7 +2282,7 @@ document.getElementById('obSendTest').onclick = async ()=>{
 document.getElementById('obReceivedYes').onclick = ()=>{
   document.getElementById('obReceivedRow').style.display = 'none';
   document.getElementById('obHelpBox').style.display = 'none';
-  document.getElementById('obTestStatus').textContent = "Great — you're all set for notifications!";
+  document.getElementById('obTestStatus').textContent = "You're all set! Click next to start using the app.";
 };
 document.getElementById('obReceivedNo').onclick = ()=>{
   document.getElementById('obHelpBox').style.display = 'block';
@@ -2254,9 +2316,16 @@ function finishOnboarding(){
   STATE.settings.bedLatest = document.getElementById('obBedLatest').value;
   STATE.settings.pilotMode = document.getElementById('obPilotMode').checked;
   STATE.onboarded = true;
+  // This is the first-ever save of these settings (not a later "change" from
+  // Settings), so today's snapshot is established fresh here rather than
+  // waiting for tomorrow's rollover.
+  STATE.daySettings = {
+    wakeEarliest: STATE.settings.wakeEarliest, wakeLatest: STATE.settings.wakeLatest,
+    bedEarliest: STATE.settings.bedEarliest, bedLatest: STATE.settings.bedLatest,
+  };
   saveState();
   ensureToday();
-  STATE.schedule = { date: STATE.day.date, times: generateBeepTimes() };
+  STATE.schedule = { date: STATE.day.date, times: generateBeepTimes(STATE.daySettings) };
   STATE.futureSchedules = {};
   STATE.ntfyScheduledThrough = null;
   saveState();
@@ -2270,7 +2339,7 @@ function finishOnboarding(){
 }
 
 document.getElementById('onboardNext').onclick = ()=>{
-  if(onboardPos === 0 && !validateOnboardInfoPage()) return;
+  if(onboardPos === INFO_PAGE && !validateOnboardInfoPage()) return;
   if(onboardPos === ONBOARD_PAGE_COUNT - 1){ finishOnboarding(); return; }
   onboardPos++;
   renderOnboardStep();
