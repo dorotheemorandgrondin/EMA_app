@@ -1129,7 +1129,7 @@ function buildBeepSurvey(beepIndex){
   const isLast = beepIndex === BEEPS_PER_DAY - 1;
 
   const fixed1 = [
-    q('mood_beep', 'slider', 'Good day! It\u2019s time for some questions.<br>How are you feeling right now?', { min:'🙁', max:'🙂', html:true }),
+    q('mood_beep', 'slider', 'Hello! It\u2019s time for some questions.<br>How are you feeling right now?', { min:'🙁', max:'🙂', html:true }),
   ];
 
   const stateQs = [
@@ -1143,11 +1143,6 @@ function buildBeepSurvey(beepIndex){
 
   const fixed2 = [
     q('location','single','Where are you right now?', { choices:['Home','Work',"Someone else's house",'Outside','Somewhere else'], otherOnLast:true }),
-    q('withSomeone','yesno','Were you with someone during the last 2 hours?', {
-      followupYes: [
-        q('withWho','multi','Who were you with?', { choices: RELATIONS, otherLabel:'Someone else', relExpand:'retro' }),
-      ]
-    }),
   ];
 
   // --- Retrospective: ask about activities planned at previous beeps,
@@ -1162,22 +1157,23 @@ function buildBeepSurvey(beepIndex){
         q('retro_effort_'+item.id, 'slider', 'How effortful did this activity feel?', {min:'Not at all', max:'Very much', activityBanner:banner}),
         q('retro_enjoy_'+item.id, 'slider', 'How enjoyable did this activity feel?', {min:'Not at all', max:'Very much', activityBanner:banner}),
         q('retro_should_'+item.id, 'slider', 'How much do you feel you had to do this activity?', {min:'Not at all', max:'Very much', activityBanner:banner}),
+        q('retro_time_'+item.id, 'time', 'How much time did you spend on this activity in the last two hours?', {activityBanner:banner}),
       ]);
       retro.push(q('retro_status_'+item.id, 'single', 'Did you do this activity?', {
         activityBanner: banner,
         pendingId: item.id,
-        choices: ['No', 'I initiated the activity, but did not complete it', 'I completed the activity'],
+        choices: ['No', 'I initiated the activity, but abandoned it', 'I did the activity'],
         branches: {
           'No': [
             q('retro_whyNotInit_'+item.id, 'single', 'Why did you not initiate this activity?', { choices: NOT_DONE_REASONS, activityBanner:banner }),
             q('retro_initLater_'+item.id, 'yesno', 'Will you initiate this activity later today?', { activityBanner:banner }),
           ],
-          'I initiated the activity, but did not complete it': [
-            q('retro_whyNotComplete_'+item.id, 'single', 'Why did you not complete this activity?', { choices: NOT_DONE_REASONS, activityBanner:banner }),
+          'I initiated the activity, but abandoned it': [
+            q('retro_whyNotComplete_'+item.id, 'single', 'Why did you abandon this activity?', { choices: NOT_DONE_REASONS, activityBanner:banner }),
             q('retro_completeLater_'+item.id, 'yesno', 'Will you complete this activity later today?', { activityBanner:banner }),
             ...ratingTrio(),
           ],
-          'I completed the activity': ratingTrio(),
+          'I did the activity': ratingTrio(),
         },
       }));
     });
@@ -1524,6 +1520,7 @@ function prospectiveActivityBlock(label, iid){
     q('act_effortful_future_'+iid, 'slider', 'How effortful do you think this activity will feel?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_enjoyable_future_'+iid, 'slider', 'How enjoyable do you think this activity will feel?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_should_'+iid, 'slider', 'How much do you think you should do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_time_'+iid, 'time', 'How much time will you spend on this activity in the next two hours?', {activityBanner:label}),
     q('act_othersPresent_'+iid, 'yesno', 'Will other people be with you during this activity?', {
       activityBanner:label,
       followupYes: [ q('act_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label, relExpand:'prospective' }) ]
@@ -1541,11 +1538,11 @@ function retroExtraActivityBlock(label, iid){
     q('else_effort_'+iid, 'slider', 'How effortful was this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('else_enjoy_'+iid, 'slider', 'How enjoyable was this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('else_should_'+iid, 'slider', 'How much do you feel you had to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('else_time_'+iid, 'time', 'How much time did you spend on this activity in the last two hours?', {activityBanner:label}),
     q('else_othersPresent_'+iid, 'yesno', 'Were other people with you during this activity?', {
       activityBanner:label,
       followupYes: [ q('else_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label, relExpand:'retro' }) ]
     }),
-    q('else_likely_'+iid, 'slider', 'How likely are you to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('else_toldBy_'+iid, 'slider', 'Did you decide to do this by yourself, or did someone else tell you to do this?', {
       activityBanner:label, min:'Someone else pushed me', max:'I decided all by myself',
       followupIfLTE: 50,
@@ -1673,11 +1670,11 @@ function finishSurvey(){
   if(survey.type==='beep'){
     (STATE.day.pendingActivities || []).forEach(item=>{
       const status = survey.answers['retro_status_'+item.id];
-      if(status === 'I completed the activity'){
+      if(status === 'I did the activity'){
         item._resolved = true;
       } else if(status === 'No'){
         if(survey.answers['retro_initLater_'+item.id] !== 'Yes') item._resolved = true;
-      } else if(status === 'I initiated the activity, but did not complete it'){
+      } else if(status === 'I initiated the activity, but abandoned it'){
         if(survey.answers['retro_completeLater_'+item.id] !== 'Yes') item._resolved = true;
       }
     });
