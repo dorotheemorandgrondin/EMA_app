@@ -130,6 +130,10 @@
   .slider-row{ display:flex; align-items:center; gap:12px; font-size:22px; margin-top:10px;}
   input[type=range]{ flex:1; accent-color: var(--teal); height:6px; }
   .slider-ends{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-top:6px; }
+  .duration-ticks span{ font-size:10px; white-space:nowrap; }
+  .duration-ticks span:first-child{ text-align:left; }
+  .duration-ticks span:last-child{ text-align:right; }
+  .duration-current{ text-align:center; font-family:'Inter',sans-serif; font-size:24px; font-weight:700; color:var(--teal-deep); margin-bottom:2px; transition:opacity .15s ease; }
 
   /* stepper */
   .stepper-row{ display:flex; align-items:center; justify-content:center; gap:22px; margin-top:14px; }
@@ -308,6 +312,11 @@
       <div style="display:flex; gap:8px;">
         <input type="text" id="setNtfyTopic" readonly style="flex:1; font-family:'SFMono-Regular',Consolas,monospace; background:var(--paper-2);" />
         <button class="btn ghost small" id="btnCopyTopic" type="button">Copy</button>
+      </div>
+      <div class="settings-hint" id="ntfySyncStatus" style="margin-top:8px;"></div>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn ghost small" id="btnResyncNtfy" type="button" style="flex:1;">Resync notifications</button>
+        <button class="btn ghost small" id="btnSendTestNtfy" type="button" style="flex:1;">Send test</button>
       </div>
     </div>
     <div class="pilot-row">
@@ -886,8 +895,13 @@ async function scheduleNtfyUpcoming(){
     for(const p of points){
       const deliverAt = dayMidnight.getTime() + p.mins*60000;
       if(deliverAt <= now + 60000) continue; // skip anything already past (only relevant to today)
+      // ntfy.sh caps scheduled delivery at 3 days out (259200s) — never ask
+      // for more than that, and skip (rather than mis-schedule) anything
+      // that would exceed it.
+      const delaySeconds = Math.floor((deliverAt - now)/1000);
+      if(delaySeconds > 259200){ continue; }
       try{
-        await fetch('https://ntfy.sh/', {
+        const res = await fetch('https://ntfy.sh/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -898,8 +912,21 @@ async function scheduleNtfyUpcoming(){
             click: baseUrl + '?open=' + encodeURIComponent(p.tag),
           }),
         });
+        // A non-2xx response (rate limit, quota, bad request, server error…)
+        // means the message was NOT actually queued on ntfy's side. Treating
+        // this the same as a thrown network error — i.e. NOT advancing the
+        // watermark — is essential: previously this was ignored, so a
+        // rejected request was silently recorded as "scheduled" and the
+        // reminder would just never arrive, with no way to notice or retry.
+        if(!res.ok){
+          dayOk = false;
+          STATE.lastNtfyError = `HTTP ${res.status} on ${dayKey}`;
+          break;
+        }
       }catch(e){
         dayOk = false; // network hiccup — stop here, retry from this day next time
+        STATE.lastNtfyError = String(e && e.message || e);
+        break;
       }
     }
     if(!dayOk) break;
@@ -909,7 +936,11 @@ async function scheduleNtfyUpcoming(){
 
   if(lastGoodKey){
     STATE.ntfyScheduledThrough = lastGoodKey;
+    STATE.lastNtfyError = null;
+    STATE.lastNtfySyncAt = new Date().toISOString();
     saveState();
+  } else if(STATE.lastNtfyError){
+    saveState(); // persist the error even if the watermark didn't move
   }
 
   }finally{
@@ -1100,6 +1131,18 @@ function activityChoiceList(){
 }
 const RELATIONS = ['Partner','Children','Family members','Friends','Colleagues','Neighbor','Someone else'];
 const NOT_DONE_REASONS = ['I had no energy','It would be too much work','I had too much to do','Physical problems',"I couldn't concentrate",'Something else'];
+// Duration questions ("how much time did you spend/will you spend on this
+// activity") use a marker slider instead of a clock picker — a clock picker
+// asks "what time is it" when the question is really "how long", which is
+// what was confusing people. Values are stored as whole minutes.
+const DURATION_TICK_MINUTES = [0, 30, 60, 90, 120]; // labeled markers along the 0–2h track
+const DURATION_TICK_LABELS = ['0min', '30min', '1h', '1h30', '2h'];
+function formatDuration(mins){
+  if(mins <= 0) return '0min';
+  if(mins < 60) return mins + 'min';
+  const h = Math.floor(mins/60), m = mins % 60;
+  return m === 0 ? h + 'h' : h + 'h' + m;
+}
 
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function lowerFirst(s){ return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
@@ -1157,7 +1200,7 @@ function buildBeepSurvey(beepIndex){
         q('retro_effort_'+item.id, 'slider', 'How effortful did this activity feel?', {min:'Not at all', max:'Very much', activityBanner:banner}),
         q('retro_enjoy_'+item.id, 'slider', 'How enjoyable did this activity feel?', {min:'Not at all', max:'Very much', activityBanner:banner}),
         q('retro_should_'+item.id, 'slider', 'How much do you feel you had to do this activity?', {min:'Not at all', max:'Very much', activityBanner:banner}),
-        q('retro_time_'+item.id, 'time', 'How much time did you spend on this activity in the last two hours?', {activityBanner:banner}),
+        q('retro_time_'+item.id, 'duration', 'How much time did you spend on this activity in the last two hours?', {activityBanner:banner}),
       ]);
       retro.push(q('retro_status_'+item.id, 'single', 'Did you do this activity?', {
         activityBanner: banner,
@@ -1316,7 +1359,7 @@ function renderStep(){
 function validateStep(question){
   if(!question) return false;
   const ans = survey.answers[question.id];
-  if(question.type === 'slider') return survey.touched.has(question.id);
+  if(question.type === 'slider' || question.type === 'duration') return survey.touched.has(question.id);
   if(question.type === 'stepper') return true;
   if(question.type === 'yesno') return ans === 'Yes' || ans === 'No';
   if(question.type === 'time' || question.type === 'text') return !!(ans && String(ans).trim());
@@ -1368,6 +1411,26 @@ function renderInput(question, holder){
     document.getElementById('rangeInput').addEventListener('input', (e)=>{
       survey.answers[question.id] = Number(e.target.value);
       survey.touched.add(question.id);
+      document.getElementById('sliderHint').textContent = '';
+      document.getElementById('rangeInput').style.opacity = '1';
+      refreshNextButton();
+    });
+  }
+  else if(question.type === 'duration'){
+    const touched = survey.touched.has(question.id);
+    const mins = (touched && typeof existing === 'number') ? existing : 0;
+    holder.innerHTML = `
+      <div class="duration-current" id="durationCurrent" style="${touched?'':'opacity:.45'}">${formatDuration(mins)}</div>
+      <div class="slider-row"><input type="range" min="0" max="120" step="1" value="${mins}" id="rangeInput" style="${touched?'':'opacity:.45'}"/></div>
+      <div class="slider-ends duration-ticks">${DURATION_TICK_LABELS.map(l=>`<span>${l}</span>`).join('')}</div>
+      <div class="q-eyebrow" id="sliderHint" style="margin-top:10px;">${touched ? '' : 'Move the slider to answer'}</div>
+    `;
+    document.getElementById('rangeInput').addEventListener('input', (e)=>{
+      const v = Number(e.target.value);
+      survey.answers[question.id] = v;
+      survey.touched.add(question.id);
+      document.getElementById('durationCurrent').textContent = formatDuration(v);
+      document.getElementById('durationCurrent').style.opacity = '1';
       document.getElementById('sliderHint').textContent = '';
       document.getElementById('rangeInput').style.opacity = '1';
       refreshNextButton();
@@ -1520,12 +1583,12 @@ function prospectiveActivityBlock(label, iid){
     q('act_effortful_future_'+iid, 'slider', 'How effortful do you think this activity will feel?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_enjoyable_future_'+iid, 'slider', 'How enjoyable do you think this activity will feel?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_should_'+iid, 'slider', 'How much do you think you should do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('act_time_'+iid, 'time', 'How much time will you spend on this activity in the next two hours?', {activityBanner:label}),
+    q('act_time_'+iid, 'duration', 'How much time will you spend on this activity in the next two hours?', {activityBanner:label}),
     q('act_othersPresent_'+iid, 'yesno', 'Will other people be with you during this activity?', {
       activityBanner:label,
       followupYes: [ q('act_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label, relExpand:'prospective' }) ]
     }),
-    q('act_likely_'+iid, 'slider', 'How likely are you to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
+    q('act_likely_'+iid, 'slider', 'How likely are you to do this activity today?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('act_toldBy_'+iid, 'slider', 'Did you decide to do this by yourself, or did someone else tell you to do this?', {
       activityBanner:label, min:'Someone else pushed me', max:'I decided all by myself',
       followupIfLTE: 50,
@@ -1538,7 +1601,7 @@ function retroExtraActivityBlock(label, iid){
     q('else_effort_'+iid, 'slider', 'How effortful was this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('else_enjoy_'+iid, 'slider', 'How enjoyable was this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
     q('else_should_'+iid, 'slider', 'How much do you feel you had to do this activity?', {min:'Not at all', max:'Very much', activityBanner:label}),
-    q('else_time_'+iid, 'time', 'How much time did you spend on this activity in the last two hours?', {activityBanner:label}),
+    q('else_time_'+iid, 'duration', 'How much time did you spend on this activity in the last two hours?', {activityBanner:label}),
     q('else_othersPresent_'+iid, 'yesno', 'Were other people with you during this activity?', {
       activityBanner:label,
       followupYes: [ q('else_othersWho_'+iid, 'multi', 'Relationship:', { choices: RELATIONS, otherLabel:'Someone else', activityBanner:label, relExpand:'retro' }) ]
@@ -1975,14 +2038,65 @@ function openSettings(){
   document.getElementById('pilotPasswordRow').style.display = 'none';
   document.getElementById('settingsConfirmRow').style.display = 'none';
   document.getElementById('setNtfyTopic').value = STATE.settings.ntfyTopic || '';
+  renderNtfySyncStatus();
   document.getElementById('settingsLayer').classList.add('open');
 }
 document.getElementById('btnSettings').onclick = openSettings;
 
+function renderNtfySyncStatus(){
+  const el = document.getElementById('ntfySyncStatus');
+  if(!el) return;
+  if(!STATE.settings.ntfyTopic){ el.textContent = ''; return; }
+  const parts = [];
+  if(STATE.ntfyScheduledThrough){
+    parts.push(`Synced through ${STATE.ntfyScheduledThrough}.`);
+  } else {
+    parts.push('Not yet synced.');
+  }
+  if(STATE.lastNtfyError){
+    parts.push(`Last attempt failed (${STATE.lastNtfyError}) — tap "Resync notifications" once you have a connection.`);
+    el.style.color = 'var(--amber, #c58e3a)';
+  } else {
+    el.style.color = '';
+  }
+  el.textContent = parts.join(' ');
+}
+
+// Shared with the onboarding "Send test notification" step — see obSendTest.
+async function sendNtfyTest(topic){
+  const res = await fetch('https://ntfy.sh/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic, title: 'Test notification 🎉', message: 'Bravo! The notifications are now working.' }),
+  });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+}
+
+document.getElementById('btnSendTestNtfy').onclick = async ()=>{
+  if(!STATE.settings.ntfyTopic){ toast('No code found yet'); return; }
+  toast('Sending…');
+  try{
+    await sendNtfyTest(STATE.settings.ntfyTopic);
+    toast('Sent — check your phone');
+  }catch(e){
+    toast('Could not reach the notification service');
+  }
+};
+
+document.getElementById('btnResyncNtfy').onclick = async ()=>{
+  toast('Resyncing…');
+  // Force a full resend: clear the watermark so scheduleNtfyUpcoming treats
+  // nothing as already-sent, then let it run again from today.
+  STATE.ntfyScheduledThrough = null;
+  saveState();
+  await scheduleNtfyUpcoming();
+  renderNtfySyncStatus();
+  toast(STATE.lastNtfyError ? 'Resync failed — check your connection' : 'Notifications resynced');
+};
+
 document.getElementById('btnCopyTopic').onclick = async ()=>{
   const val = document.getElementById('setNtfyTopic').value;
-  try{ await navigator.clipboard.writeText(val); toast('Copied'); }
-  catch(e){ toast('Copy failed — select and copy manually'); }
+  copyTextRobust(val, document.getElementById('setNtfyTopic'));
 };
 
 /* Inline "are you sure" confirmation for a wake/bed time change — a custom
@@ -2073,8 +2187,7 @@ document.getElementById('instructionsClose').onclick = ()=>{
 };
 document.getElementById('btnCopyTopicInstr').onclick = async ()=>{
   const val = document.getElementById('instrNtfyTopic').value;
-  try{ await navigator.clipboard.writeText(val); toast('Copied'); }
-  catch(e){ toast('Copy failed — select and copy manually'); }
+  copyTextRobust(val, document.getElementById('instrNtfyTopic'));
 };
 
 /* ---------------- First-time onboarding wizard ---------------- */
@@ -2268,8 +2381,7 @@ function validateOnboardInfoPage(){
 
 document.getElementById('obCopyTopic').onclick = async ()=>{
   const val = document.getElementById('obNtfyTopic').value;
-  try{ await navigator.clipboard.writeText(val); toast('Copied'); }
-  catch(e){ toast('Copy failed — select and copy manually'); }
+  copyTextRobust(val, document.getElementById('obNtfyTopic'));
 };
 
 const VIDEO_URL = ''; // set this to a real video link once one exists (e.g. a YouTube/Vimeo URL)
@@ -2381,6 +2493,34 @@ function toast(msg){
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ---------------- Robust clipboard copy ----------------
+   navigator.clipboard.writeText can silently fail or throw in some mobile
+   webview / installed-PWA contexts, which is what left people stuck with
+   nothing actually on their clipboard even though our old code just showed
+   a generic "copy failed" toast and moved on. This tries the modern API
+   first, falls back to the old execCommand('copy') approach (still widely
+   supported and works in places the async API doesn't), and if both fail,
+   actually selects the text in the field so a manual press-and-hold → Copy
+   is guaranteed to grab the right thing. */
+async function copyTextRobust(text, inputEl){
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('Copied');
+    return true;
+  }catch(e){ /* fall through to legacy fallback */ }
+  try{
+    if(inputEl){
+      inputEl.focus();
+      inputEl.select();
+      inputEl.setSelectionRange(0, text.length);
+      if(document.execCommand('copy')){ toast('Copied'); return true; }
+    }
+  }catch(e){ /* fall through to manual fallback */ }
+  if(inputEl){ inputEl.focus(); inputEl.select(); }
+  toast('Couldn’t copy automatically — it’s selected, press and hold it and choose Copy');
+  return false;
 }
 
 /* ---------------- Boot ---------------- */
