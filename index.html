@@ -1205,6 +1205,8 @@ function buildBeepSurvey(beepIndex){
       retro.push(q('retro_status_'+item.id, 'single', 'Did you do this activity?', {
         activityBanner: banner,
         pendingId: item.id,
+        pendingKey: item.key || '',
+        pendingOrigin: item.originEntryId || '',
         choices: ['No', 'I initiated the activity, but abandoned it', 'I did the activity'],
         branches: {
           'No': [
@@ -1305,6 +1307,23 @@ function startSurvey(type, tag){
   // right after the question that triggered them, so Back always walks the
   // exact questions actually shown, in order, with no separate queue.
   survey = { type, tag, beepIndex, timeline: base.slice(), pos:0, answers:{}, touched: new Set(), startTime: new Date().toISOString() };
+  // Self-describing columns for the CSV export: for every retrospective
+  // follow-up question on this timeline, record the activity's name and
+  // category slug straight into the answers (not rendered as a question of
+  // its own) so retro_*_<pendingId> groups carry their own activity label
+  // right on the row — no need to reconstruct which activity a given
+  // random pendingId refers to from the app's internal state.
+  survey.timeline.forEach(qq=>{
+    if(qq.pendingId){
+      survey.answers['retro_label_'+qq.pendingId] = qq.activityBanner || '';
+      survey.answers['retro_key_'+qq.pendingId] = qq.pendingKey || '';
+      // The id of the check-in row that originally planned this activity —
+      // written directly onto the follow-up row so it (and any tidy export
+      // built from it) can link "expected" ratings to their later "actual"
+      // ratings by id, with no need to reconstruct the link afterwards.
+      survey.answers['retro_origin_'+qq.pendingId] = qq.pendingOrigin || '';
+    }
+  });
   document.getElementById('surveyLayer').classList.add('open');
   renderStep();
 }
@@ -1667,13 +1686,39 @@ function computeFollowups(question){
   return list;
 }
 
+/* Recursively removes a set of already-inserted follow-up questions (and
+   anything THEY had already spliced in) from the timeline, and clears their
+   answers. Clearing the answers matters just as much as removing the
+   questions: without it, going Back and changing an earlier answer only
+   hid the old follow-ups from the timeline — their answers stayed in
+   survey.answers and shipped in the export looking like they still
+   applied. E.g. an effort/enjoy/should rating left over from a discarded
+   "I did the activity" answer, exported alongside a status the person
+   changed to "No" after going Back — a real case found in a pilot export. */
+function retireFollowups(ids){
+  if(!ids || !ids.length) return;
+  const removed = survey.timeline.filter(q2 => ids.includes(q2.id));
+  survey.timeline = survey.timeline.filter(q2 => !ids.includes(q2.id));
+  ids.forEach(id=>{
+    delete survey.answers[id];
+    delete survey.answers[id+'_other'];
+    survey.touched.delete(id);
+  });
+  removed.forEach(q2=>{
+    if(q2._insertedIds && q2._insertedIds.length){
+      retireFollowups(q2._insertedIds);
+      q2._insertedIds = [];
+    }
+  });
+}
+
 /* Insert (or, on revisit with a changed answer, replace) a question's
    follow-ups directly into the timeline right after it. Using the same
    flat array for both display and navigation means Back always walks
    exactly what was shown, in order — no separate queue to fall out of sync. */
 function insertFollowups(question){
   if(question._insertedIds && question._insertedIds.length){
-    survey.timeline = survey.timeline.filter(q2 => !question._insertedIds.includes(q2.id));
+    retireFollowups(question._insertedIds);
   }
   const fresh = computeFollowups(question);
   question._insertedIds = fresh.map(q2=>q2.id);
@@ -1726,6 +1771,10 @@ function activityVerb(item, answers, prefix){
 
 function finishSurvey(){
   const beepIdx = survey.beepIndex;
+  // Generated up front (instead of when `entry` is built below) so newly
+  // queued pendingActivities can be stamped with the id of the row that
+  // planned them — see 'retro_origin_' above.
+  const entryId = uid();
 
   // Resolve retrospective items based on the 3-way status: completed always
   // resolves it; 'No' or 'Initiated' only stay pending if the person says
@@ -1756,8 +1805,19 @@ function finishSurvey(){
         if(dup){
           dup.addedAt = beepIdx;
           dup.verb = verb;
+          dup.originEntryId = entryId;
         } else {
-          STATE.day.pendingActivities.push({ id: uid(), label, verb, addedAt: beepIdx });
+          // item.key is the same deterministic category+activity slug used
+          // for act_*/else_* columns (e.g. 'household_chore_cleaning') —
+          // carrying it here means the retro_* follow-up for this pending
+          // item can be self-describing in the CSV export (see
+          // buildBeepSurvey below) instead of only being identifiable by an
+          // opaque random id, which used to make exports very hard to
+          // analyze without reconstructing the app's internal queue.
+          // originEntryId links back to this exact row, where its expected
+          // (act_*) ratings live, so a tidy export can join planned ->
+          // outcome by id instead of guessing from label/order.
+          STATE.day.pendingActivities.push({ id: uid(), label, verb, key: item.key || '', addedAt: beepIdx, originEntryId: entryId });
         }
       });
     }
@@ -1765,7 +1825,7 @@ function finishSurvey(){
 
   const endTimeIso = new Date().toISOString();
   const entry = {
-    id: uid(),
+    id: entryId,
     type: survey.type,
     tag: survey.tag || survey.type,
     participantId: STATE.settings.participantId || '',
@@ -1903,6 +1963,183 @@ function flattenAnswers(ans){
   return out;
 }
 
+/* ---------------- Tidy export: checkins.csv + activities.csv ----------------
+   Reshapes STATE.entries (one row per submission, wide and sparse) into two
+   analysis-ready tables instead of leaving that to a separate script:
+     - checkins:   one row per check-in — mood/energy/concentration/sleep and
+                    everything else that isn't tied to a specific activity.
+     - activities: one row per activity — expected ratings from when it was
+                    planned, then its completion status at each later beep it
+                    was actually checked on (completion_beep_plus1, _plus2,
+                    ...) until resolved, then the ratings from that final
+                    beep. Planned -> outcome activities are linked by the
+                    retro_origin_/retro_key_ ids written onto each row (see
+                    startSurvey), so no reconstruction is needed.
+   The full raw export (STATE.entries, via toCSV below) is still produced
+   too, unchanged, as the underlying record. */
+
+const ACTIVITY_KEY_INDEX = (()=>{
+  const idx = {};
+  activityChoiceList().forEach(item=>{ idx[item.key] = { category: item.category, activity: item.label }; });
+  return idx;
+})();
+
+function formatBeepTag(tag){
+  const m = /^beep-(\d+)$/.exec(tag || '');
+  return m ? ('beep_' + (Number(m[1]) + 1)) : (tag || '');
+}
+function numOrNull(v){
+  if(v === undefined || v === null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function orBlank(v){ return (v === null || v === undefined) ? '' : v; }
+function parseDurationMin(v){
+  if(v === undefined || v === null || v === '') return null;
+  if(/^\d{1,2}:\d{2}$/.test(String(v).trim())) return null; // legacy clock-time field, not a duration
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function buildCheckinsTable(){
+  const dropExact = new Set(['mood_beep','mood_evening','sleepQuality','tag','nextActivity','elseActivity','anythingElse']);
+  const lead = ['participant_id','date','beep','mood','energy','concentration','sleep'];
+  return STATE.entries.map(e=>{
+    const row = {};
+    lead.forEach(k=> row[k] = '');
+    Object.keys(e).forEach(k=>{
+      if(k.startsWith('act_') || k.startsWith('else_') || k.startsWith('retro_')) return;
+      if(dropExact.has(k) || k === 'participantId') return;
+      if(/^(nextActivity|elseActivity)_other_/.test(k)) return;
+      row[k] = e[k];
+    });
+    row.participant_id = e.participantId || '';
+    row.beep = formatBeepTag(e.tag);
+    row.mood = orBlank(e.mood !== undefined ? e.mood : (e.mood_beep !== undefined ? e.mood_beep : e.mood_evening));
+    row.sleep = orBlank(e.sleepQuality);
+    return row;
+  });
+}
+
+function buildActivitiesTable(){
+  const roots = [];
+  const rootByKey = {};
+
+  STATE.entries.forEach(e=>{
+    const beepMatch = /^beep-(\d+)$/.exec(e.tag || '');
+    const beepIndex = beepMatch ? Number(beepMatch[1]) : null;
+    if(beepIndex === null) return; // activities are only planned/reported during beep surveys
+
+    const actKeys = new Set();
+    Object.keys(e).forEach(k=>{
+      const m = /^act_(?:effortful_future|enjoyable_future|should|time|likely)_(.+)$/.exec(k);
+      if(m) actKeys.add(m[1]);
+    });
+    actKeys.forEach(key=>{
+      const rootKey = e.id + '||' + key;
+      rootByKey[rootKey] = roots[roots.push({
+        rootKey, entryId: e.id, participantId: e.participantId, date: e.date,
+        beepPlanned: formatBeepTag(e.tag), beepIndex, key, unplanned: false,
+        effort: numOrNull(e['act_effortful_future_'+key]), reward: numOrNull(e['act_enjoyable_future_'+key]),
+        should: numOrNull(e['act_should_'+key]), likely: numOrNull(e['act_likely_'+key]),
+        timeMin: parseDurationMin(e['act_time_'+key]),
+      }) - 1];
+    });
+
+    const elseKeys = new Set();
+    Object.keys(e).forEach(k=>{
+      const m = /^else_(?:effort|enjoy|should|time)_(.+)$/.exec(k);
+      if(m) elseKeys.add(m[1]);
+    });
+    elseKeys.forEach(key=>{
+      const rootKey = e.id + '||' + key + '||unplanned';
+      rootByKey[rootKey] = roots[roots.push({
+        rootKey, entryId: e.id, participantId: e.participantId, date: e.date,
+        beepPlanned: formatBeepTag(e.tag), beepIndex, key, unplanned: true,
+        effort: numOrNull(e['else_effort_'+key]), reward: numOrNull(e['else_enjoy_'+key]),
+        should: numOrNull(e['else_should_'+key]), likely: null,
+        timeMin: parseDurationMin(e['else_time_'+key]),
+      }) - 1];
+    });
+  });
+
+  const followupsByRoot = {};
+  let maxOffset = 5;
+  STATE.entries.forEach(e=>{
+    const beepMatch = /^beep-(\d+)$/.exec(e.tag || '');
+    const beepIndex = beepMatch ? Number(beepMatch[1]) : null;
+    if(beepIndex === null) return;
+    Object.keys(e).forEach(k=>{
+      const m = /^retro_status_(.+)$/.exec(k);
+      if(!m) return;
+      const pid = m[1];
+      const status = e[k];
+      const originId = e['retro_origin_'+pid];
+      const key = e['retro_key_'+pid];
+      if(!status || !originId || !key) return; // older export, missing the linking fields
+      const root = rootByKey[originId + '||' + key];
+      if(!root) return;
+      const offset = beepIndex - root.beepIndex;
+      if(offset < 1) return;
+      if(offset > maxOffset) maxOffset = offset;
+      let stepStatus;
+      if(status === 'I did the activity') stepStatus = 'completed';
+      else if(status === 'I initiated the activity, but abandoned it') stepStatus = (e['retro_completeLater_'+pid] === 'Yes') ? 'initiated' : 'abandoned';
+      else if(status === 'No') stepStatus = (e['retro_initLater_'+pid] === 'Yes') ? 'initiated' : 'not_done';
+      else return;
+      (followupsByRoot[root.rootKey] = followupsByRoot[root.rootKey] || []).push({
+        offset, stepStatus,
+        effort: numOrNull(e['retro_effort_'+pid]), reward: numOrNull(e['retro_enjoy_'+pid]),
+        should: numOrNull(e['retro_should_'+pid]), timeMin: parseDurationMin(e['retro_time_'+pid]),
+        whyNot: e['retro_whyNotInit_'+pid] || e['retro_whyNotComplete_'+pid] || null,
+      });
+    });
+  });
+
+  const offsetCols = []; for(let i=1;i<=maxOffset;i++) offsetCols.push('completion_beep_plus'+i);
+  const colOrder = ['participant_id','date','beep_planned','activity_category','activity','completed',
+    'expected_effort','expected_reward','expected_should','expected_likely',
+    ...offsetCols,
+    'actual_effort','actual_reward','actual_should','expected_time_min','actual_time_min',
+    'why_not','unplanned','activity_key'];
+
+  return roots.map(root=>{
+    const cat = ACTIVITY_KEY_INDEX[root.key] || {};
+    const list = (followupsByRoot[root.rootKey] || []).slice().sort((a,b)=>a.offset-b.offset);
+    const row = { participant_id: root.participantId || '', date: root.date, beep_planned: root.beepPlanned,
+      activity_category: cat.category || '', activity: cat.activity || '' };
+    offsetCols.forEach(c=> row[c] = '');
+    let lastRatingStep = null, lastWhyNot = null, lastFinalStatus = null;
+    list.forEach(f=>{
+      row['completion_beep_plus'+f.offset] = f.stepStatus;
+      if(f.effort !== null || f.reward !== null || f.should !== null) lastRatingStep = f;
+      if(f.whyNot) lastWhyNot = f.whyNot;
+      if(['completed','abandoned','not_done'].includes(f.stepStatus)) lastFinalStatus = f.stepStatus;
+    });
+    if(root.unplanned){
+      row.completion_beep_plus1 = 'completed';
+      row.expected_effort = ''; row.expected_reward = ''; row.expected_should = ''; row.expected_likely = ''; row.expected_time_min = '';
+      row.actual_effort = orBlank(root.effort); row.actual_reward = orBlank(root.reward); row.actual_should = orBlank(root.should);
+      row.actual_time_min = orBlank(root.timeMin);
+      row.completed = 1;
+    } else {
+      row.expected_effort = orBlank(root.effort); row.expected_reward = orBlank(root.reward); row.expected_should = orBlank(root.should);
+      row.expected_likely = orBlank(root.likely); row.expected_time_min = orBlank(root.timeMin);
+      row.actual_effort = lastRatingStep ? orBlank(lastRatingStep.effort) : '';
+      row.actual_reward = lastRatingStep ? orBlank(lastRatingStep.reward) : '';
+      row.actual_should = lastRatingStep ? orBlank(lastRatingStep.should) : '';
+      row.actual_time_min = lastRatingStep ? orBlank(lastRatingStep.timeMin) : '';
+      row.completed = lastFinalStatus === 'completed' ? 1 : (lastFinalStatus ? 0 : '');
+    }
+    row.why_not = lastWhyNot || '';
+    row.unplanned = root.unplanned ? 'TRUE' : 'FALSE';
+    row.activity_key = root.key;
+    const ordered = {};
+    colOrder.forEach(c=> ordered[c] = row[c]);
+    return ordered;
+  });
+}
+
 /* ---------------- CSV export ---------------- */
 function toCSV(rows){
   if(!rows.length) return '';
@@ -1918,15 +2155,27 @@ function toCSV(rows){
   return lines.join('\n');
 }
 async function exportCSV(){
-  const csv = toCSV(STATE.entries);
-  if(!csv){ toast('No entries yet'); return; }
-  const filename = `ema-export-${STATE.settings.participantId || 'participant'}-${todayStr()}.csv`;
-  const blob = new Blob([csv], {type:'text/csv'});
-  const file = new File([blob], filename, {type:'text/csv'});
+  if(!STATE.entries.length){ toast('No entries yet'); return; }
+  const pid = STATE.settings.participantId || 'participant';
+  const day = todayStr();
+  const files = [];
+  const addFile = (name, csv)=>{ if(csv) files.push(new File([new Blob([csv],{type:'text/csv'})], name, {type:'text/csv'})); };
 
-  if(navigator.canShare && navigator.canShare({ files:[file] })){
+  addFile(`ema-export-${pid}-${day}.csv`, toCSV(STATE.entries));
+  // Tidy tables, reshaped from the same data — see buildCheckinsTable/
+  // buildActivitiesTable above. Wrapped defensively so a bug in the reshape
+  // logic can never block the raw export, which is the one thing that must
+  // always go out.
+  try{
+    addFile(`ema-checkins-${pid}-${day}.csv`, toCSV(buildCheckinsTable()));
+    addFile(`ema-activities-${pid}-${day}.csv`, toCSV(buildActivitiesTable()));
+  }catch(err){
+    console.error('Tidy export failed, sending the raw export only', err);
+  }
+
+  if(navigator.canShare && navigator.canShare({ files })){
     try{
-      await navigator.share({ files:[file], title:'EMA data export', text:`EMA export — participant ${STATE.settings.participantId || ''}` });
+      await navigator.share({ files, title:'EMA data export', text:`EMA export — participant ${pid}` });
       return;
     }catch(e){
       // user cancelled the share sheet, or it failed — fall through to download
@@ -1934,18 +2183,20 @@ async function exportCSV(){
     }
   }
 
-  // Fallback: download the file, then open a pre-addressed email draft.
+  // Fallback: download each file, then open a pre-addressed email draft.
   // Browsers can't attach files via mailto:, so the draft asks the person
-  // to attach the file that was just downloaded.
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
+  // to attach the file(s) that were just downloaded.
+  files.forEach(file=>{
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
 
   const to = RESEARCHER_EMAIL_DEFAULT;
-  const subject = encodeURIComponent(`EMA export — participant ${STATE.settings.participantId || ''}`);
-  const body = encodeURIComponent(`The file "${filename}" was just downloaded to this phone — please attach it to this email before sending.`);
+  const subject = encodeURIComponent(`EMA export — participant ${pid}`);
+  const body = encodeURIComponent(`${files.length} file(s) were just downloaded to this phone (the full export, plus tidy tables for analysis) — please attach them to this email before sending.`);
   setTimeout(()=>{
     window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
   }, 400);
