@@ -1966,17 +1966,19 @@ function flattenAnswers(ans){
 /* ---------------- Tidy export: checkins.csv + activities.csv ----------------
    Reshapes STATE.entries (one row per submission, wide and sparse) into two
    analysis-ready tables instead of leaving that to a separate script:
-     - checkins:   one row per check-in — mood/energy/concentration/sleep and
-                    everything else that isn't tied to a specific activity.
+     - checkins:   one row per check-in — participant_id, beep, mood,
+                    concentration, energy, sleep (plus date, appended — see
+                    the comment in buildCheckinsTable).
      - activities: one row per activity — expected ratings from when it was
-                    planned, then its completion status at each later beep it
-                    was actually checked on (completion_beep_plus1, _plus2,
-                    ...) until resolved, then the ratings from that final
-                    beep. Planned -> outcome activities are linked by the
+                    planned, its status at each of the day's beeps
+                    (status_beep1.._beep6, using the actual beep number),
+                    then the ratings from whichever beep it resolved on.
+                    Planned -> outcome activities are linked by the
                     retro_origin_/retro_key_ ids written onto each row (see
                     startSurvey), so no reconstruction is needed.
-   The full raw export (STATE.entries, via toCSV below) is still produced
-   too, unchanged, as the underlying record. */
+   Missing values are written as the literal string "na" throughout, to
+   match. The full raw export (STATE.entries, via toCSV below) is still
+   produced too, unchanged, as the underlying record. */
 
 const ACTIVITY_KEY_INDEX = (()=>{
   const idx = {};
@@ -1986,38 +1988,50 @@ const ACTIVITY_KEY_INDEX = (()=>{
 
 function formatBeepTag(tag){
   const m = /^beep-(\d+)$/.exec(tag || '');
-  return m ? ('beep_' + (Number(m[1]) + 1)) : (tag || '');
+  return m ? ('beep_' + String(Number(m[1]) + 1).padStart(2,'0')) : (tag || '');
 }
 function numOrNull(v){
   if(v === undefined || v === null || v === '') return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
-function orBlank(v){ return (v === null || v === undefined) ? '' : v; }
+function orNA(v){ return (v === null || v === undefined || v === '') ? 'na' : v; }
 function parseDurationMin(v){
   if(v === undefined || v === null || v === '') return null;
   if(/^\d{1,2}:\d{2}$/.test(String(v).trim())) return null; // legacy clock-time field, not a duration
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
+// startTime is a UTC ISO string; new Date(iso) + getHours()/getMinutes()
+// read it back in THIS device's local time automatically (this runs in the
+// browser at export time, the same device the survey was filled on).
+function timeStr12(iso){
+  if(!iso) return 'na';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return 'na';
+  let h = d.getHours();
+  const m = pad(d.getMinutes());
+  const ap = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if(h === 0) h = 12;
+  return h + ':' + m + ap;
+}
 
 function buildCheckinsTable(){
-  const dropExact = new Set(['mood_beep','mood_evening','sleepQuality','tag','nextActivity','elseActivity','anythingElse']);
-  const lead = ['participant_id','date','beep','mood','energy','concentration','sleep'];
+  // Only what was asked for: participant_id, beep, mood, concentration,
+  // energy, sleep. "date" is appended anyway — without it there's no way
+  // to tell one day's beep_01 from another's once you have more than one
+  // day of data. Delete the column yourself if you'd rather not have it.
   return STATE.entries.map(e=>{
-    const row = {};
-    lead.forEach(k=> row[k] = '');
-    Object.keys(e).forEach(k=>{
-      if(k.startsWith('act_') || k.startsWith('else_') || k.startsWith('retro_')) return;
-      if(dropExact.has(k) || k === 'participantId') return;
-      if(/^(nextActivity|elseActivity)_other_/.test(k)) return;
-      row[k] = e[k];
-    });
-    row.participant_id = e.participantId || '';
-    row.beep = formatBeepTag(e.tag);
-    row.mood = orBlank(e.mood !== undefined ? e.mood : (e.mood_beep !== undefined ? e.mood_beep : e.mood_evening));
-    row.sleep = orBlank(e.sleepQuality);
-    return row;
+    const mood = e.mood !== undefined ? e.mood : (e.mood_beep !== undefined ? e.mood_beep : e.mood_evening);
+    return {
+      participant_id: e.participantId || 'na',
+      beep: formatBeepTag(e.tag),
+      mood: orNA(mood),
+      concentration: orNA(e.concentration),
+      energy: orNA(e.energy),
+      sleep: orNA(e.sleepQuality),
+      date: e.date,
+    };
   });
 }
 
@@ -2027,8 +2041,9 @@ function buildActivitiesTable(){
 
   STATE.entries.forEach(e=>{
     const beepMatch = /^beep-(\d+)$/.exec(e.tag || '');
-    const beepIndex = beepMatch ? Number(beepMatch[1]) : null;
+    const beepIndex = beepMatch ? Number(beepMatch[1]) : null; // 0-indexed
     if(beepIndex === null) return; // activities are only planned/reported during beep surveys
+    const time = timeStr12(e.startTime);
 
     const actKeys = new Set();
     Object.keys(e).forEach(k=>{
@@ -2038,8 +2053,7 @@ function buildActivitiesTable(){
     actKeys.forEach(key=>{
       const rootKey = e.id + '||' + key;
       rootByKey[rootKey] = roots[roots.push({
-        rootKey, entryId: e.id, participantId: e.participantId, date: e.date,
-        beepPlanned: formatBeepTag(e.tag), beepIndex, key, unplanned: false,
+        rootKey, entryId: e.id, participantId: e.participantId, date: e.date, time, beepIndex, key, unplanned: false,
         effort: numOrNull(e['act_effortful_future_'+key]), reward: numOrNull(e['act_enjoyable_future_'+key]),
         should: numOrNull(e['act_should_'+key]), likely: numOrNull(e['act_likely_'+key]),
         timeMin: parseDurationMin(e['act_time_'+key]),
@@ -2054,8 +2068,7 @@ function buildActivitiesTable(){
     elseKeys.forEach(key=>{
       const rootKey = e.id + '||' + key + '||unplanned';
       rootByKey[rootKey] = roots[roots.push({
-        rootKey, entryId: e.id, participantId: e.participantId, date: e.date,
-        beepPlanned: formatBeepTag(e.tag), beepIndex, key, unplanned: true,
+        rootKey, entryId: e.id, participantId: e.participantId, date: e.date, time, beepIndex, key, unplanned: true,
         effort: numOrNull(e['else_effort_'+key]), reward: numOrNull(e['else_enjoy_'+key]),
         should: numOrNull(e['else_should_'+key]), likely: null,
         timeMin: parseDurationMin(e['else_time_'+key]),
@@ -2063,8 +2076,14 @@ function buildActivitiesTable(){
     });
   });
 
+  // status_beep<n> values: "planned" (the beep it was proposed at),
+  // "not_initiated" (checked, said no), "initiated" (checked, said started
+  // but not done), "completed" (done), "na" (before it was planned,
+  // already resolved earlier, or the day ended before this beep happened).
+  // Note: "not_initiated"/"initiated" don't distinguish "still meaning to"
+  // from "gave up for good" — the app doesn't ask again either way once
+  // resolved, so both look identical here.
   const followupsByRoot = {};
-  let maxOffset = 5;
   STATE.entries.forEach(e=>{
     const beepMatch = /^beep-(\d+)$/.exec(e.tag || '');
     const beepIndex = beepMatch ? Number(beepMatch[1]) : null;
@@ -2079,61 +2098,51 @@ function buildActivitiesTable(){
       if(!status || !originId || !key) return; // older export, missing the linking fields
       const root = rootByKey[originId + '||' + key];
       if(!root) return;
-      const offset = beepIndex - root.beepIndex;
-      if(offset < 1) return;
-      if(offset > maxOffset) maxOffset = offset;
       let stepStatus;
       if(status === 'I did the activity') stepStatus = 'completed';
-      else if(status === 'I initiated the activity, but abandoned it') stepStatus = (e['retro_completeLater_'+pid] === 'Yes') ? 'initiated' : 'abandoned';
-      else if(status === 'No') stepStatus = (e['retro_initLater_'+pid] === 'Yes') ? 'initiated' : 'not_done';
+      else if(status === 'I initiated the activity, but abandoned it') stepStatus = 'initiated';
+      else if(status === 'No') stepStatus = 'not_initiated';
       else return;
       (followupsByRoot[root.rootKey] = followupsByRoot[root.rootKey] || []).push({
-        offset, stepStatus,
+        beepIndex, stepStatus,
         effort: numOrNull(e['retro_effort_'+pid]), reward: numOrNull(e['retro_enjoy_'+pid]),
         should: numOrNull(e['retro_should_'+pid]), timeMin: parseDurationMin(e['retro_time_'+pid]),
-        whyNot: e['retro_whyNotInit_'+pid] || e['retro_whyNotComplete_'+pid] || null,
       });
     });
   });
 
-  const offsetCols = []; for(let i=1;i<=maxOffset;i++) offsetCols.push('completion_beep_plus'+i);
-  const colOrder = ['participant_id','date','beep_planned','activity_category','activity','completed',
-    'expected_effort','expected_reward','expected_should','expected_likely',
-    ...offsetCols,
-    'actual_effort','actual_reward','actual_should','expected_time_min','actual_time_min',
-    'why_not','unplanned','activity_key'];
+  const statusCols = []; for(let i=1;i<=BEEPS_PER_DAY;i++) statusCols.push('status_beep'+i);
+  const colOrder = ['participant_id','date','time','activity_category','activity',
+    'expected_effort','expected_reward','expected_should','expected_duration','likelihood',
+    ...statusCols,
+    'experienced_effort','experienced_reward','experienced_should','experienced_duration'];
 
   return roots.map(root=>{
     const cat = ACTIVITY_KEY_INDEX[root.key] || {};
-    const list = (followupsByRoot[root.rootKey] || []).slice().sort((a,b)=>a.offset-b.offset);
-    const row = { participant_id: root.participantId || '', date: root.date, beep_planned: root.beepPlanned,
+    const list = (followupsByRoot[root.rootKey] || []).slice().sort((a,b)=>a.beepIndex-b.beepIndex);
+    const row = { participant_id: root.participantId || 'na', date: root.date, time: root.time,
       activity_category: cat.category || '', activity: cat.activity || '' };
-    offsetCols.forEach(c=> row[c] = '');
-    let lastRatingStep = null, lastWhyNot = null, lastFinalStatus = null;
+    statusCols.forEach(c=> row[c] = 'na');
+    row['status_beep'+(root.beepIndex+1)] = root.unplanned ? 'completed' : 'planned';
+    let lastRatingStep = null;
     list.forEach(f=>{
-      row['completion_beep_plus'+f.offset] = f.stepStatus;
+      row['status_beep'+(f.beepIndex+1)] = f.stepStatus;
       if(f.effort !== null || f.reward !== null || f.should !== null) lastRatingStep = f;
-      if(f.whyNot) lastWhyNot = f.whyNot;
-      if(['completed','abandoned','not_done'].includes(f.stepStatus)) lastFinalStatus = f.stepStatus;
     });
     if(root.unplanned){
-      row.completion_beep_plus1 = 'completed';
-      row.expected_effort = ''; row.expected_reward = ''; row.expected_should = ''; row.expected_likely = ''; row.expected_time_min = '';
-      row.actual_effort = orBlank(root.effort); row.actual_reward = orBlank(root.reward); row.actual_should = orBlank(root.should);
-      row.actual_time_min = orBlank(root.timeMin);
-      row.completed = 1;
+      row.expected_effort = 'na'; row.expected_reward = 'na'; row.expected_should = 'na';
+      row.expected_duration = 'na'; row.likelihood = 'na';
+      row.experienced_effort = orNA(root.effort); row.experienced_reward = orNA(root.reward);
+      row.experienced_should = orNA(root.should); row.experienced_duration = orNA(root.timeMin);
     } else {
-      row.expected_effort = orBlank(root.effort); row.expected_reward = orBlank(root.reward); row.expected_should = orBlank(root.should);
-      row.expected_likely = orBlank(root.likely); row.expected_time_min = orBlank(root.timeMin);
-      row.actual_effort = lastRatingStep ? orBlank(lastRatingStep.effort) : '';
-      row.actual_reward = lastRatingStep ? orBlank(lastRatingStep.reward) : '';
-      row.actual_should = lastRatingStep ? orBlank(lastRatingStep.should) : '';
-      row.actual_time_min = lastRatingStep ? orBlank(lastRatingStep.timeMin) : '';
-      row.completed = lastFinalStatus === 'completed' ? 1 : (lastFinalStatus ? 0 : '');
+      row.expected_effort = orNA(root.effort); row.expected_reward = orNA(root.reward);
+      row.expected_should = orNA(root.should); row.expected_duration = orNA(root.timeMin);
+      row.likelihood = orNA(root.likely);
+      row.experienced_effort = lastRatingStep ? orNA(lastRatingStep.effort) : 'na';
+      row.experienced_reward = lastRatingStep ? orNA(lastRatingStep.reward) : 'na';
+      row.experienced_should = lastRatingStep ? orNA(lastRatingStep.should) : 'na';
+      row.experienced_duration = lastRatingStep ? orNA(lastRatingStep.timeMin) : 'na';
     }
-    row.why_not = lastWhyNot || '';
-    row.unplanned = root.unplanned ? 'TRUE' : 'FALSE';
-    row.activity_key = root.key;
     const ordered = {};
     colOrder.forEach(c=> ordered[c] = row[c]);
     return ordered;
