@@ -318,6 +318,10 @@
         <button class="btn ghost small" id="btnResyncNtfy" type="button" style="flex:1;">Resync notifications</button>
         <button class="btn ghost small" id="btnSendTestNtfy" type="button" style="flex:1;">Send test</button>
       </div>
+      <div style="margin-top:8px;">
+        <button class="btn ghost small" id="btnNewNtfyCode" type="button" style="width:100%;">Get a new code (clears old queued notifications)</button>
+        <div class="settings-hint" style="margin-top:6px;">Only if you still get extra notifications. You'll then need to remove the old code in the ntfy app and add the new one.</div>
+      </div>
     </div>
     <div class="pilot-row">
       <input type="checkbox" id="setPilotMode" />
@@ -638,6 +642,7 @@ function loadState(){
   if(!state.settings.ntfyTopic) state.settings.ntfyTopic = 'dailyrhythm-'+randTopicSuffix();
   if(!state.futureSchedules) state.futureSchedules = {};
   if(state.ntfyScheduledThrough === undefined) state.ntfyScheduledThrough = null;
+  if(!state.ntfySent) state.ntfySent = {}; // ledger of notifications already queued with ntfy
   if(state.onboarded === undefined) state.onboarded = !!state.settings.participantId;
   // Migrate old single wakeStart/wakeEnd settings (pre-range) to ranges.
   if(state.settings.wakeStart && !state.settings.wakeEarliest){
@@ -792,27 +797,20 @@ function checkDueBeeps(){
   if(!STATE.settings.ntfyTopic){
     const nowMin = nowMinutes();
     const mw = morningWindow();
-    const morningNotifAt = mw.end - 30;
-    if(!STATE.day.morningDone && nowMin >= morningNotifAt && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
-      fireNotification('Good morning ☀️', 'Your morning check-in closes in 30 minutes.', 'morning');
+    // One notification per window, at the minute it opens — nothing else.
+    if(!STATE.day.morningDone && nowMin >= mw.start && nowMin <= mw.end && !notifiedTags.has('morning-'+STATE.day.date)){
+      fireNotification('Good morning ☀️', 'Your morning check-in is open.', 'morning');
       markNotified('morning-'+STATE.day.date);
     }
     STATE.schedule.times.forEach((t, idx)=>{
       const tag = 'beep-'+idx+'-'+STATE.day.date;
-      const reminderTag = 'beep-'+idx+'-reminder-'+STATE.day.date;
-      const w = beepWindowMinutes(idx);
       if(beepStatus(idx) === 'available' && !notifiedTags.has(tag)){
         fireNotification('It\u2019s time for some questions', 'You have 30 minutes to answer.', 'beep-'+idx);
         markNotified(tag);
       }
-      if(!STATE.day.beepsDone.includes(idx) && nowMin >= w.start+15 && nowMin <= w.end && !notifiedTags.has(reminderTag)){
-        fireNotification('Just a reminder', 'Your check-in is still open — a few minutes left.', 'beep-'+idx);
-        markNotified(reminderTag);
-      }
     });
     const ew = eveningWindow();
-    const eveningNotifAt = ew.start + 30;
-    if(!STATE.day.eveningDone && nowMin >= eveningNotifAt && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
+    if(!STATE.day.eveningDone && nowMin >= ew.start && nowMin <= ew.end && !notifiedTags.has('evening-'+STATE.day.date)){
       fireNotification('Evening check-in 🌙', 'A few questions to round off the day.', 'evening');
       markNotified('evening-'+STATE.day.date);
     }
@@ -831,23 +829,44 @@ const NTFY_ROLL_AHEAD_DAYS = 2; // keep today + this many days ahead scheduled w
    push several days ahead every time it *is* opened, keeping a rolling buffer.
    That way a day the app never gets opened still has its notifications queued,
    as long as the app was opened at some point in the preceding couple of days. */
+/* Exactly ONE notification per window, at the minute the window opens:
+   morning, each of the 6 check-ins, and evening. No reminders, nothing else. */
 function checkpointsForDay(beepTimes, s){
   const mw = morningWindow(s);
+  const ew = eveningWindow(s);
   const points = [
-    { mins: mw.end - 30, title:'Good morning ☀️', body:'Your morning check-in closes in 30 minutes.', tag:'morning' },
+    { mins: mw.start, title:'Good morning ☀️', body:'Your morning check-in is open.', tag:'morning' },
   ];
   beepTimes.forEach((t, idx)=>{
     const [th,tm] = t.split(':').map(Number);
-    const start = th*60+tm;
-    points.push({ mins: start, title:'It\u2019s time for some questions', body:'You have 30 minutes to answer.', tag:'beep-'+idx });
-    points.push({ mins: start + 15, title:'Just a reminder', body:'Your check-in is still open — a few minutes left.', tag:'beep-'+idx });
+    points.push({ mins: th*60+tm, title:'It’s time for some questions', body:'You have 30 minutes to answer.', tag:'beep-'+idx });
   });
-  const ew = eveningWindow(s);
-  points.push({ mins: ew.start + 30, title:'Evening check-in 🌙', body:'A few questions to round off the day.', tag:'evening' });
+  points.push({ mins: ew.start, title:'Evening check-in 🌙', body:'A few questions to round off the day.', tag:'evening' });
   return points;
 }
 
+/* Cancel a message ntfy is still holding for future delivery.
+   Returns true when it's safe to forget the message (cancelled, already gone,
+   or the server refuses cancellation), false on a network/server hiccup so the
+   cancel is retried on the next sync. */
+async function ntfyCancel(topic, id){
+  if(!id) return true;
+  try{
+    const res = await fetch('https://ntfy.sh/' + encodeURIComponent(topic) + '/' + encodeURIComponent(id), { method: 'DELETE' });
+    if(res.ok) return true;
+    return res.status >= 400 && res.status < 500;
+  }catch(e){
+    return false;
+  }
+}
+
 let ntfySchedulingInProgress = false;
+/* Reconciles what ntfy is holding with what should be queued. STATE.ntfySent
+   is a ledger of every message already handed to ntfy ({ 'date|tag': {at, id} }),
+   so a retry, a resync or a settings change can never queue the same
+   notification twice: a message is only sent if it isn't already queued for
+   that exact minute, and a queued message whose time has changed (or that is
+   no longer wanted) is cancelled first. */
 async function scheduleNtfyUpcoming(){
   if(ntfySchedulingInProgress) return; // a call is already in flight — don't send duplicates
   if(!STATE.settings.ntfyTopic) return;
@@ -861,45 +880,63 @@ async function scheduleNtfyUpcoming(){
 
   ntfySchedulingInProgress = true;
   try{
+    if(!STATE.ntfySent) STATE.ntfySent = {};
+    const ledger = STATE.ntfySent;
+    const topic = STATE.settings.ntfyTopic;
+    const baseUrl = location.origin + location.pathname;
+    const now = Date.now();
+    let ok = true;
 
-  let startKey = todayKey;
-  if(STATE.ntfyScheduledThrough && STATE.ntfyScheduledThrough >= todayKey){
-    const d = new Date(STATE.ntfyScheduledThrough+'T00:00:00');
-    d.setDate(d.getDate()+1);
-    startKey = todayStr(d);
-  }
+    // Forget delivered history older than a day.
+    Object.keys(ledger).forEach(k=>{ if(ledger[k].at < now - 86400000) delete ledger[k]; });
 
-  const topic = STATE.settings.ntfyTopic;
-  const baseUrl = location.origin + location.pathname;
-  const now = Date.now();
-  let cursor = new Date(startKey+'T00:00:00');
-  const endDate = new Date(targetEndKey+'T00:00:00');
-  let lastGoodKey = (STATE.ntfyScheduledThrough && STATE.ntfyScheduledThrough >= todayKey) ? STATE.ntfyScheduledThrough : null;
-
-  while(cursor <= endDate){
-    const dayKey = todayStr(cursor);
-    let beepTimes;
-    // Today uses the frozen daySettings snapshot; a future day (not yet
-    // rolled over) uses the current/pending settings — the best guess for
-    // what will be in effect once it arrives (updated again if changed later).
-    const dayS = (dayKey === todayKey) ? (STATE.daySettings || STATE.settings) : STATE.settings;
-    if(dayKey === STATE.schedule.date){
-      beepTimes = STATE.schedule.times; // today's already-committed schedule
-    } else {
-      beepTimes = STATE.futureSchedules[dayKey] || generateBeepTimes(dayS);
-      STATE.futureSchedules[dayKey] = beepTimes; // cache so that day uses these same times when it arrives
+    // 1. What SHOULD be queued: every window start from now through the roll-ahead horizon.
+    const desired = {};
+    const cursor = new Date(todayKey+'T00:00:00');
+    const endDate = new Date(targetEndKey+'T00:00:00');
+    while(cursor <= endDate){
+      const dayKey = todayStr(cursor);
+      // Today uses the frozen daySettings snapshot; a future day (not yet
+      // rolled over) uses the current/pending settings — the best guess for
+      // what will be in effect once it arrives (updated again if changed later).
+      const dayS = (dayKey === todayKey) ? (STATE.daySettings || STATE.settings) : STATE.settings;
+      let beepTimes;
+      if(dayKey === STATE.schedule.date){
+        beepTimes = STATE.schedule.times; // today's already-committed schedule
+      } else {
+        beepTimes = STATE.futureSchedules[dayKey] || generateBeepTimes(dayS);
+        STATE.futureSchedules[dayKey] = beepTimes; // cache so that day uses these same times when it arrives
+      }
+      const dayMidnight = new Date(cursor); dayMidnight.setHours(0,0,0,0);
+      checkpointsForDay(beepTimes, dayS).forEach(p=>{
+        const deliverAt = dayMidnight.getTime() + p.mins*60000;
+        if(deliverAt <= now + 60000) return; // already past (only relevant to today)
+        // ntfy.sh caps scheduled delivery at 3 days out (259200s) — skip
+        // (rather than mis-schedule) anything beyond it; it's picked up on a later sync.
+        if(Math.floor((deliverAt - now)/1000) > 259200) return;
+        desired[dayKey+'|'+p.tag] = { p, deliverAt };
+      });
+      cursor.setDate(cursor.getDate()+1);
     }
-    const dayMidnight = new Date(cursor); dayMidnight.setHours(0,0,0,0);
-    const points = checkpointsForDay(beepTimes, dayS);
-    let dayOk = true;
-    for(const p of points){
-      const deliverAt = dayMidnight.getTime() + p.mins*60000;
-      if(deliverAt <= now + 60000) continue; // skip anything already past (only relevant to today)
-      // ntfy.sh caps scheduled delivery at 3 days out (259200s) — never ask
-      // for more than that, and skip (rather than mis-schedule) anything
-      // that would exceed it.
-      const delaySeconds = Math.floor((deliverAt - now)/1000);
-      if(delaySeconds > 259200){ continue; }
+
+    // 2. Cancel anything still queued that is no longer wanted, or is queued for a different minute.
+    for(const key of Object.keys(ledger)){
+      const rec = ledger[key];
+      if(rec.at <= now + 60000) continue; // delivered (or about to be) — leave it alone
+      if(desired[key] && desired[key].deliverAt === rec.at) continue; // already correct
+      if(await ntfyCancel(topic, rec.id)){
+        delete ledger[key];
+      } else {
+        ok = false;
+        STATE.lastNtfyError = 'Could not cancel an outdated notification — will retry';
+      }
+    }
+    saveState();
+
+    // 3. Queue whatever isn't queued yet, earliest first.
+    const toSend = Object.keys(desired).filter(k=>!ledger[k]).sort((a,b)=>desired[a].deliverAt - desired[b].deliverAt);
+    for(const key of toSend){
+      const { p, deliverAt } = desired[key];
       try{
         const res = await fetch('https://ntfy.sh/', {
           method: 'POST',
@@ -913,36 +950,29 @@ async function scheduleNtfyUpcoming(){
           }),
         });
         // A non-2xx response (rate limit, quota, bad request, server error…)
-        // means the message was NOT actually queued on ntfy's side. Treating
-        // this the same as a thrown network error — i.e. NOT advancing the
-        // watermark — is essential: previously this was ignored, so a
-        // rejected request was silently recorded as "scheduled" and the
-        // reminder would just never arrive, with no way to notice or retry.
+        // means the message was NOT actually queued on ntfy's side.
         if(!res.ok){
-          dayOk = false;
-          STATE.lastNtfyError = `HTTP ${res.status} on ${dayKey}`;
+          ok = false;
+          STATE.lastNtfyError = `HTTP ${res.status} on ${key.split('|')[0]}`;
           break;
         }
+        let id = null;
+        try{ id = (await res.json()).id || null; }catch(e){}
+        ledger[key] = { at: deliverAt, id };
+        saveState(); // record immediately so an interrupted run can't re-send it
       }catch(e){
-        dayOk = false; // network hiccup — stop here, retry from this day next time
+        ok = false; // network hiccup — stop here, retry the rest next time
         STATE.lastNtfyError = String(e && e.message || e);
         break;
       }
     }
-    if(!dayOk) break;
-    lastGoodKey = dayKey;
-    cursor.setDate(cursor.getDate()+1);
-  }
 
-  if(lastGoodKey){
-    STATE.ntfyScheduledThrough = lastGoodKey;
-    STATE.lastNtfyError = null;
-    STATE.lastNtfySyncAt = new Date().toISOString();
+    if(ok){
+      STATE.ntfyScheduledThrough = targetEndKey;
+      STATE.lastNtfyError = null;
+      STATE.lastNtfySyncAt = new Date().toISOString();
+    }
     saveState();
-  } else if(STATE.lastNtfyError){
-    saveState(); // persist the error even if the watermark didn't move
-  }
-
   }finally{
     ntfySchedulingInProgress = false;
   }
@@ -2345,13 +2375,40 @@ document.getElementById('btnSendTestNtfy').onclick = async ()=>{
 
 document.getElementById('btnResyncNtfy').onclick = async ()=>{
   toast('Resyncing…');
-  // Force a full resend: clear the watermark so scheduleNtfyUpcoming treats
-  // nothing as already-sent, then let it run again from today.
+  // Re-check everything: clear the watermark so the whole horizon is
+  // reconciled again. Safe to repeat — anything already queued with ntfy is
+  // recognised from the ledger (STATE.ntfySent) and never sent twice.
   STATE.ntfyScheduledThrough = null;
   saveState();
   await scheduleNtfyUpcoming();
   renderNtfySyncStatus();
   toast(STATE.lastNtfyError ? 'Resync failed — check your connection' : 'Notifications resynced');
+};
+
+// Fresh code = fresh ntfy topic: every notification queued under the old code
+// (including leftovers from older app versions, which can't be cancelled
+// individually) is simply abandoned. Two taps, because window.confirm() is
+// unreliable inside an installed PWA.
+let _newCodeTimer = null;
+const NEW_CODE_LABEL = 'Get a new code (clears old queued notifications)';
+document.getElementById('btnNewNtfyCode').onclick = async (e)=>{
+  const btn = e.currentTarget;
+  if(!_newCodeTimer){
+    btn.textContent = 'Tap again to confirm — you must then add the new code in ntfy';
+    _newCodeTimer = setTimeout(()=>{ _newCodeTimer = null; btn.textContent = NEW_CODE_LABEL; }, 6000);
+    return;
+  }
+  clearTimeout(_newCodeTimer); _newCodeTimer = null;
+  btn.textContent = NEW_CODE_LABEL;
+  STATE.settings.ntfyTopic = 'dailyrhythm-' + randTopicSuffix();
+  STATE.ntfySent = {};
+  STATE.ntfyScheduledThrough = null;
+  STATE.lastNtfyError = null;
+  saveState();
+  document.getElementById('setNtfyTopic').value = STATE.settings.ntfyTopic;
+  toast('New code ready — add it in the ntfy app');
+  await scheduleNtfyUpcoming();
+  renderNtfySyncStatus();
 };
 
 document.getElementById('btnCopyTopic').onclick = async ()=>{
